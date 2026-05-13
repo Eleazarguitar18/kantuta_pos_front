@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
@@ -16,8 +16,15 @@ export default function SignInForm() {
   const [isChecked, setIsChecked] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { loginStorage } = useAuth();
+  const { loginStorage, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  // Navegamos al home cuando el usuario esté autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
   // funcion de login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,15 +34,19 @@ export default function SignInForm() {
         email,
         password,
       });
-      if (response.status === 201) {
-        //desestructuramos la respuesta
-        const { token, refresh_token, user } = response.data;
-        //actualizamos el estado global
-        loginStorage(token, refresh_token, user);
-        //navegamos a la siguiente pagina
-        navigate("/");
+      console.log(response);
+
+      if (response.status === 201 || response.status === 200) {
+        // desestructuramos la respuesta usando los nombres correctos de tu interfaz AuthResponse
+        const { access_token, refresh_token, user } = response.data;
+        
+        // actualizamos el estado global
+        loginStorage(access_token, refresh_token, user);
       }
+      // Detenemos la carga independientemente del resultado
+      setLoading(false);
     } catch (error) {
+      console.error("Error en login:", error);
       setLoading(false);
     }
   };
