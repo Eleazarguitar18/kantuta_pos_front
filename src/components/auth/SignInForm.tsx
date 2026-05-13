@@ -15,6 +15,7 @@ export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const { loginStorage, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -29,25 +30,34 @@ export default function SignInForm() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg(null); // Limpiamos errores previos
     try {
       const response = await authService.login({
         email,
         password,
       });
-      console.log(response);
 
       if (response.status === 201 || response.status === 200) {
-        // desestructuramos la respuesta usando los nombres correctos de tu interfaz AuthResponse
         const { access_token, refresh_token, user } = response.data;
-        
-        // actualizamos el estado global
         loginStorage(access_token, refresh_token, user);
       }
-      // Detenemos la carga independientemente del resultado
       setLoading(false);
-    } catch (error) {
-      console.error("Error en login:", error);
+    } catch (error: any) {
       setLoading(false);
+      if (error.response) {
+        const { status, data } = error.response;
+        if (status === 500) {
+          setErrorMsg("No se puede conectar con el servidor");
+        } else if (status === 404) {
+          setErrorMsg("Se equivocó con las credenciales");
+        } else {
+          // Si la API trae un mensaje lo usamos, si no, uno genérico
+          const apiMessage = data?.message || "Error desconocido";
+          setErrorMsg(`Error ${status}: ${apiMessage}`);
+        }
+      } else {
+        setErrorMsg("Error de red: el servidor no responde");
+      }
     }
   };
 
@@ -113,6 +123,11 @@ export default function SignInForm() {
                     ¿Olvidaste tu contraseña?
                   </Link>
                 </div>
+                {errorMsg && (
+                  <div className="p-3 text-sm font-medium text-center rounded-lg text-error-600 bg-error-50 dark:bg-error-500/10 dark:text-error-500">
+                    {errorMsg}
+                  </div>
+                )}
                 <div>
                   <Button className="w-full" size="sm" disabled={loading}>
                     {loading ? "Iniciando sesión..." : "Iniciar sesión"}
