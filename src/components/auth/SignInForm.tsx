@@ -7,7 +7,7 @@ import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
 import { useAuth } from "../../context/auth/AuthContext";
 import { authService } from "./services/authService";
-import { AuthResponse } from "../../modules/Administracion/Usuarios/types/auth.type";
+// import { AuthResponse } from "../../modules/Administracion/Usuarios/types/auth.type";
 
 export default function SignInForm() {
   const [email, setEmail] = useState("");
