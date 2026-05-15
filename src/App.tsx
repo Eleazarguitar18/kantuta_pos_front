@@ -20,6 +20,10 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import ProtectedRoute from "./router/ProtectedRoute";
 import { AuthContextProvider } from "./context/auth/AuthContext";
+import CategoriasRegister from "./modules/Inventario/Categorias/components/CategoriasRegister";
+import CategoriasMain from "./modules/Inventario/Categorias/components/CategoriasMain";
+import ProductosMain from "./modules/Inventario/Productos/components/ProductosMain";
+import ProductosRegister from "./modules/Inventario/Productos/components/ProductosRegister";
 
 export default function App() {
   return (
@@ -32,6 +36,17 @@ export default function App() {
               {/* Dashboard Layout */}
               <Route element={<AppLayout />}>
                 <Route index path="/" element={<Home />} />
+                {/* Inventario */}
+                <Route path="/inventario">
+                  <Route path="productos" element={<ProductosMain />}>
+                    <Route index element={<ProductosMain />} />
+                    <Route path="registrar" element={<ProductosRegister />} />
+                  </Route>
+                  <Route path="categorias">
+                    <Route index element={<CategoriasMain />} />
+                    <Route path="registrar" element={<CategoriasRegister />} />
+                  </Route>
+                </Route>
 
                 {/* Others Page */}
                 <Route path="/profile" element={<UserProfiles />} />
