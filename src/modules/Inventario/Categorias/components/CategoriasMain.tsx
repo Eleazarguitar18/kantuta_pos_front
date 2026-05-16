@@ -1,21 +1,67 @@
 import { useNavigate } from "react-router";
-import { PlusIcon } from "../../../../icons";
+import { PencilIcon, TrashBinIcon } from "../../../../icons";
 import DataTable from "react-data-table-component";
+import { CategoriasService } from "../services/categoriasService";
+import { useEffect, useState } from "react";
+import ComponentCard from "../../../../components/common/ComponentCard";
+import ButtonEdit from "../../../../components/ui/button/ButtonEdit";
+import ButtonSmallAction from "../../../../components/ui/button/ButtonSmallAction";
+import Button from "../../../../components/ui/button/Button";
+interface Categoria {
+  id: number;
+  nombre: string;
+  actions: string;
+}
 
 const CategoriasMain = () => {
+  const [data, setData] = useState<Categoria[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await CategoriasService.getCategories();
+        setData(response.data);
+        setLoading(false);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    fetchCategories();
+  }, []);
+
   const navigate = useNavigate();
+
   const columns = [
-    { name: "ID", selector: (row: any) => row.id },
-    { name: "Nombre", selector: (row: any) => row.name },
-    { name: "Descripción", selector: (row: any) => row.description },
-    { name: "Acciones", selector: (row: any) => row.actions },
+    { name: "ID", selector: (row: Categoria) => row.id },
+    { name: "Nombre", selector: (row: Categoria) => row.nombre },
+    {
+      name: "Acciones",
+      cell: (row: Categoria) => (
+        <div className="flex gap-3">
+          <ButtonEdit
+            className=""
+            variant="primary"
+            size="sm"
+            onClick={() => console.log("Editando ID:", row.id)} // <-- Aquí ya la estás usando
+            startIcon={<PencilIcon className="w-4 h-4" color={"white"} />}
+          >
+            Editar
+          </ButtonEdit>
+          <ButtonSmallAction
+            className="bg-red-500 hover:bg-red-600 text-white"
+            variant="primary"
+            size="sm"
+            onClick={() => console.log("Eliminando ID:", row.id)} // <-- Aquí ya la estás usando
+            startIcon={<TrashBinIcon className="w-4 h-4" color={"white"} />}
+          >
+            Eliminar
+          </ButtonSmallAction>
+        </div>
+      ),
+      ignoreRowClick: true,
+    },
   ];
 
-  const data = [
-    { id: 1, name: "Categorias 1", description: "Categorias 1" },
-    { id: 2, name: "Categorias 2", description: "Categorias 2" },
-    { id: 3, name: "Categorias 3", description: "Categorias 3" },
-  ];
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -26,17 +72,36 @@ const CategoriasMain = () => {
           </p>
         </div>
         <div className="flex gap-3">
-          <button
-            className="btn-primary px-4 py-2 flex items-center gap-2"
+          <Button
+            variant="primary"
+            size="sm"
             onClick={() => navigate("registrar")}
+            startIcon={<PencilIcon className="w-4 h-4" color={"white"} />}
+            className="bg-green-600 hover:bg-green-700 text-white"
           >
-            <PlusIcon />
-            <span className="hidden sm:inline">Agregar Categoria</span>
-          </button>
+            Agregar Categoria
+          </Button>
         </div>
       </div>
-
-      <DataTable columns={columns} data={data} />
+      <ComponentCard title="Lista de Categorias">
+        <DataTable
+          columns={columns}
+          data={data}
+          pagination
+          progressPending={loading}
+          highlightOnHover
+          noDataComponent="No hay categorías registradas"
+          customStyles={{
+            headCells: {
+              style: {
+                fontWeight: "bold",
+                fontSize: "14px",
+                backgroundColor: "#f9fafb",
+              },
+            },
+          }}
+        />
+      </ComponentCard>
     </div>
   );
 };
