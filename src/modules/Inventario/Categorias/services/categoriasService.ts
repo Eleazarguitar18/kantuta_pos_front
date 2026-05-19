@@ -25,9 +25,13 @@ export const CategoriasService = {
     return response;
   },
   async updateCategory(id: number, data: Categoria) {
-    const response = await axios.put(`${API_BASE_URL}/categorias/${id}`, data, {
-      headers,
-    });
+    const response = await axios.patch(
+      `${API_BASE_URL}/categorias/${id}`,
+      data,
+      {
+        headers,
+      },
+    );
     return response;
   },
   async deleteCategory(id: number) {

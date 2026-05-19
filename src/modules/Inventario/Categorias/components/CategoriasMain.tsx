@@ -17,6 +17,8 @@ const CategoriasMain = () => {
   const [data, setData] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
+    // console.log("token", localStorage.getItem("acces_token"));
+
     const fetchCategories = async () => {
       try {
         const response = await CategoriasService.getCategories();
@@ -30,7 +32,13 @@ const CategoriasMain = () => {
   }, []);
 
   const navigate = useNavigate();
-
+  const editCategoria = (row: Categoria) => {
+    navigate(`editar/${row.id}`, { state: row });
+    // console.log("Editando ID:", row);
+  };
+  const deleteCategoria = (row: Categoria) => {
+    console.log("Eliminando ID:", row);
+  };
   const columns = [
     { name: "ID", selector: (row: Categoria) => row.id },
     { name: "Nombre", selector: (row: Categoria) => row.nombre },
@@ -42,7 +50,7 @@ const CategoriasMain = () => {
             className=""
             variant="primary"
             size="sm"
-            onClick={() => console.log("Editando ID:", row.id)} // <-- Aquí ya la estás usando
+            onClick={() => editCategoria(row)}
             startIcon={<PencilIcon className="w-4 h-4" color={"white"} />}
           >
             Editar
@@ -51,7 +59,7 @@ const CategoriasMain = () => {
             className="bg-red-500 hover:bg-red-600 text-white"
             variant="primary"
             size="sm"
-            onClick={() => console.log("Eliminando ID:", row.id)} // <-- Aquí ya la estás usando
+            onClick={() => deleteCategoria(row)}
             startIcon={<TrashBinIcon className="w-4 h-4" color={"white"} />}
           >
             Eliminar
