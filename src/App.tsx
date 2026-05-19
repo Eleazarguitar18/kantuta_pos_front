@@ -46,7 +46,7 @@ export default function App() {
                   <Route path="categorias">
                     <Route index element={<CategoriasMain />} />
                     <Route path="registrar" element={<CategoriasRegister />} />
-                    <Route path="editar/:id" element={<CategoriasEdit />} />
+                    <Route path="editar/:id_categoria" element={<CategoriasEdit />} />
                   </Route>
                 </Route>
 

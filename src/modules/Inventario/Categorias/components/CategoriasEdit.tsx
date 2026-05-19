@@ -5,7 +5,7 @@ import Input from "../../../../components/form/input/InputField";
 import { useForm } from "react-hook-form";
 import { CategoriasService } from "../services/categoriasService";
 import Alert from "../../../../components/ui/alert/Alert";
-import { useNavigate, useLocation } from "react-router";
+import { useNavigate, useLocation, useParams } from "react-router";
 import { useState, useEffect } from "react";
 import { CategoriaEditDto } from "../interfaces/CategoriaEditDto";
 import { UsuarioDto } from "../../../Administracion/Usuarios/types/interfaces/usuarioDto";
@@ -22,27 +22,35 @@ function CategoriasEdit() {
   });
   const location = useLocation();
   const categoriaAEditar: CategoriaEditDto = location.state as CategoriaEditDto; // Aquí atrapamos el objeto
+  const { id_categoria } = useParams();
 
   // Este useEffect se encargará de llenar el input si existe la data
   useEffect(() => {
     if (categoriaAEditar) {
       form.setValue("nombre", categoriaAEditar.nombre);
-    } else {
-      // (Opcional) Si categoriaAEditar es null, significa que recargaron la página.
-      // Aquí harías tu petición a CategoriasService.getCategoryById(...)
+    } else if (id_categoria) {
+      // Si categoriaAEditar es null (ej. recargaron la página), hacemos la petición
+      const fetchCategoria = async () => {
+        try {
+          const response = await CategoriasService.getCategoryById(Number(id_categoria));
+          form.setValue("nombre", response.data.nombre);
+        } catch (error) {
+          console.error("Error al obtener la categoría", error);
+        }
+      };
+      fetchCategoria();
     }
-  }, [categoriaAEditar]);
+  }, [categoriaAEditar, id_categoria, form]);
 
   const onSubmit = async (data: CategoriaEditDto) => {
     try {
       const user: UsuarioDto = JSON.parse(localStorage.getItem("user")!);
-      data.id_user_updated = user.id!;
-      data.id = categoriaAEditar?.id!;
+      data.id_user_update = user.id!;
 
       console.log("Datos que se enviarán a la API:", data);
 
       const response = await CategoriasService.updateCategory(
-        categoriaAEditar?.id!,
+        parseInt(id_categoria!),
         data,
       );
 

@@ -15,6 +15,10 @@ export const CategoriasService = {
     const response = await axios.get(`${API_BASE_URL}/categorias`, { headers });
     return response;
   },
+  async getCategoryById(id: number) {
+    const response = await axios.get(`${API_BASE_URL}/categorias/${id}`, { headers });
+    return response;
+  },
   async createCategory(data: Categoria) {
     const user: any = localStorage.getItem("user");
     data.id_user_create = JSON.parse(user).id;
