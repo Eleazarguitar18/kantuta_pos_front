@@ -24,6 +24,7 @@ import CategoriasRegister from "./modules/Inventario/Categorias/components/Categ
 import CategoriasMain from "./modules/Inventario/Categorias/components/CategoriasMain";
 import ProductosMain from "./modules/Inventario/Productos/components/ProductosMain";
 import ProductosRegister from "./modules/Inventario/Productos/components/ProductosRegister";
+import ProductosEdit from "./modules/Inventario/Productos/components/ProductosEdit";
 import CategoriasEdit from "./modules/Inventario/Categorias/components/CategoriasEdit";
 
 export default function App() {
@@ -39,9 +40,10 @@ export default function App() {
                 <Route index path="/" element={<Home />} />
                 {/* Inventario */}
                 <Route path="/inventario">
-                  <Route path="productos" element={<ProductosMain />}>
+                  <Route path="productos">
                     <Route index element={<ProductosMain />} />
                     <Route path="registrar" element={<ProductosRegister />} />
+                    <Route path="editar/:id_producto" element={<ProductosEdit />} />
                   </Route>
                   <Route path="categorias">
                     <Route index element={<CategoriasMain />} />
