@@ -1,44 +1,47 @@
 import axios from "axios";
 import { API_BASE_URL } from "../../../../components/auth/services/urlBase";
+import { ProductoEditDto } from "../interfaces/ProductoEditDto";
+import { Producto } from "../interfaces/Producto";
 
-const token: string | null = localStorage.getItem("access_token");
-const headers = {
+const getHeaders = () => ({
   "Content-Type": "application/json",
-  Authorization: `Bearer ${token}`,
-};
+  Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+});
 
 export const ProductosService = {
   async getProducts() {
-    const response = await axios.get(`${API_BASE_URL}/inventario`, { headers });
+    const response = await axios.get(`${API_BASE_URL}/productos`, { headers: getHeaders() });
     return response;
   },
   async getProductById(id: number) {
-    const response = await axios.get(`${API_BASE_URL}/inventario/${id}`, { headers });
-    return response;
-  },
-  async createProduct(data: any) {
-    const user: any = localStorage.getItem("user");
-    data.id_user_create = JSON.parse(user).id;
-    const response = await axios.post(`${API_BASE_URL}/inventario`, data, {
-      headers,
+    const response = await axios.get(`${API_BASE_URL}/productos/${id}`, {
+      headers: getHeaders(),
     });
     return response;
   },
-  async updateProduct(id: number, data: any) {
+  async createProduct(data: Producto) {
+    const user: any = localStorage.getItem("user");
+    data.id_user_create = JSON.parse(user).id;
+    const response = await axios.post(`${API_BASE_URL}/productos`, data, {
+      headers: getHeaders(),
+    });
+    return response;
+  },
+  async updateProduct(id: number, data: ProductoEditDto) {
     const user: any = localStorage.getItem("user");
     data.id_user_update = JSON.parse(user).id;
     const response = await axios.patch(
-      `${API_BASE_URL}/inventario/${id}`,
+      `${API_BASE_URL}/productos/${id}`,
       data,
       {
-        headers,
+        headers: getHeaders(),
       },
     );
     return response;
   },
   async deleteProduct(id: number) {
-    const response = await axios.delete(`${API_BASE_URL}/inventario/${id}`, {
-      headers,
+    const response = await axios.delete(`${API_BASE_URL}/productos/${id}`, {
+      headers: getHeaders(),
     });
     return response;
   },

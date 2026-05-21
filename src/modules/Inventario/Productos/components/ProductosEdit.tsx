@@ -75,14 +75,14 @@ function ProductosEdit() {
     if (productoAEditar) {
       form.setValue("nombre", productoAEditar.nombre);
       form.setValue("codigo_barras", productoAEditar.codigo_barras || "");
-      form.setValue("precio_venta", productoAEditar.precio_venta);
-      form.setValue("costo_compra", productoAEditar.costo_compra);
-      form.setValue("stock_actual", productoAEditar.stock_actual);
-      form.setValue("stock_minimo", productoAEditar.stock_minimo);
+      form.setValue("precio_venta", Number(productoAEditar.precio_venta));
+      form.setValue("costo_compra", Number(productoAEditar.costo_compra));
+      form.setValue("stock_actual", Number(productoAEditar.stock_actual));
+      form.setValue("stock_minimo", Number(productoAEditar.stock_minimo));
       const catId =
         productoAEditar.id_categoria || productoAEditar.categoria?.id;
       if (catId) {
-        form.setValue("id_categoria", catId);
+        form.setValue("id_categoria", Number(catId));
       }
     } else if (id_producto) {
       const fetchProducto = async () => {
@@ -93,13 +93,13 @@ function ProductosEdit() {
           const prod = response.data;
           form.setValue("nombre", prod.nombre);
           form.setValue("codigo_barras", prod.codigo_barras || "");
-          form.setValue("precio_venta", prod.precio_venta);
-          form.setValue("costo_compra", prod.costo_compra);
-          form.setValue("stock_actual", prod.stock_actual);
-          form.setValue("stock_minimo", prod.stock_minimo);
+          form.setValue("precio_venta", Number(prod.precio_venta));
+          form.setValue("costo_compra", Number(prod.costo_compra));
+          form.setValue("stock_actual", Number(prod.stock_actual));
+          form.setValue("stock_minimo", Number(prod.stock_minimo));
           const catId = prod.id_categoria || prod.categoria?.id;
           if (catId) {
-            form.setValue("id_categoria", catId);
+            form.setValue("id_categoria", Number(catId));
           }
         } catch (error) {
           console.error("Error al obtener el producto", error);
@@ -111,6 +111,11 @@ function ProductosEdit() {
 
   const onSubmit = async (data: ProductoEditDto) => {
     try {
+      data.costo_compra = Number(data.costo_compra);
+      data.precio_venta = Number(data.precio_venta);
+      data.stock_actual = Number(data.stock_actual);
+      data.stock_minimo = Number(data.stock_minimo);
+
       console.log("Datos que se enviarán a la API para actualizar:", data);
       const response = await ProductosService.updateProduct(
         parseInt(id_producto!),

@@ -40,7 +40,13 @@ const CategoriasMain = () => {
     console.log("Eliminando ID:", row);
   };
   const columns = [
-    { name: "ID", selector: (row: Categoria) => row.id },
+    {
+      name: "#",
+      selector: (_row: Categoria, index?: number) =>
+        index !== undefined ? index + 1 : 0,
+      sortable: false,
+      width: "80px",
+    },
     { name: "Nombre", selector: (row: Categoria) => row.nombre },
     {
       name: "Acciones",

@@ -1,10 +1,10 @@
 import axios from "axios";
 import { API_BASE_URL } from "../../../../components/auth/services/urlBase";
-const token: string | null = localStorage.getItem("access_token");
-const headers = {
+const getHeaders = () => ({
   "Content-Type": "application/json",
-  Authorization: `Bearer ${token}`,
-};
+  Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+});
+
 interface Categoria {
   nombre: string;
   id_user_create?: number;
@@ -12,11 +12,11 @@ interface Categoria {
 }
 export const CategoriasService = {
   async getCategories() {
-    const response = await axios.get(`${API_BASE_URL}/categorias`, { headers });
+    const response = await axios.get(`${API_BASE_URL}/categorias`, { headers: getHeaders() });
     return response;
   },
   async getCategoryById(id: number) {
-    const response = await axios.get(`${API_BASE_URL}/categorias/${id}`, { headers });
+    const response = await axios.get(`${API_BASE_URL}/categorias/${id}`, { headers: getHeaders() });
     return response;
   },
   async createCategory(data: Categoria) {
@@ -24,7 +24,7 @@ export const CategoriasService = {
     data.id_user_create = JSON.parse(user).id;
     // console.log("DATOS: ", data);
     const response = await axios.post(`${API_BASE_URL}/categorias`, data, {
-      headers,
+      headers: getHeaders(),
     });
     return response;
   },
@@ -33,14 +33,14 @@ export const CategoriasService = {
       `${API_BASE_URL}/categorias/${id}`,
       data,
       {
-        headers,
+        headers: getHeaders(),
       },
     );
     return response;
   },
   async deleteCategory(id: number) {
     const response = await axios.delete(`${API_BASE_URL}/categorias/${id}`, {
-      headers,
+      headers: getHeaders(),
     });
     return response;
   },
