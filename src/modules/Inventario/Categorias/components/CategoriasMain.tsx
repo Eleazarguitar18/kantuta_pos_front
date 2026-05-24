@@ -2,11 +2,12 @@ import { useNavigate } from "react-router";
 import { PencilIcon, TrashBinIcon } from "../../../../icons";
 import DataTable from "react-data-table-component";
 import { CategoriasService } from "../services/categoriasService";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import ComponentCard from "../../../../components/common/ComponentCard";
 import ButtonEdit from "../../../../components/ui/button/ButtonEdit";
 import ButtonSmallAction from "../../../../components/ui/button/ButtonSmallAction";
 import Button from "../../../../components/ui/button/Button";
+import { SocketContext } from "../../../../context/SocketContext";
 interface Categoria {
   id: number;
   nombre: string;
@@ -14,6 +15,7 @@ interface Categoria {
 }
 
 const CategoriasMain = () => {
+  const socket = useContext(SocketContext);
   const [data, setData] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
