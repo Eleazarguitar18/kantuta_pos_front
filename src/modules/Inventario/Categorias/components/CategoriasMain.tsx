@@ -2,7 +2,7 @@ import { useNavigate } from "react-router";
 import { PencilIcon, TrashBinIcon } from "../../../../icons";
 import DataTable from "react-data-table-component";
 import { CategoriasService } from "../services/categoriasService";
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import ComponentCard from "../../../../components/common/ComponentCard";
 import ButtonEdit from "../../../../components/ui/button/ButtonEdit";
 import ButtonSmallAction from "../../../../components/ui/button/ButtonSmallAction";
@@ -18,20 +18,39 @@ const CategoriasMain = () => {
   const socket = useContext(SocketContext);
   const [data, setData] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    // console.log("token", localStorage.getItem("acces_token"));
 
-    const fetchCategories = async () => {
-      try {
-        const response = await CategoriasService.getCategories();
-        setData(response.data);
-        setLoading(false);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    fetchCategories();
+  // 1. Extraemos la lógica de carga a una función estable
+  const fetchCategories = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await CategoriasService.getCategories();
+      setData(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error al cargar categorías:", error);
+      setLoading(false);
+    }
   }, []);
+
+  // 2. Carga inicial
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
+  // 3. Escucha del evento de Socket.io
+  useEffect(() => {
+    if (socket) {
+      socket.on("dataChanged", (entity: string) => {
+        if (entity === "category") {
+          fetchCategories();
+        }
+      });
+
+      return () => {
+        socket.off("dataChanged");
+      };
+    }
+  }, [socket, fetchCategories]);
 
   const navigate = useNavigate();
   const editCategoria = (row: Categoria) => {
