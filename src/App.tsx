@@ -26,6 +26,16 @@ import ProductosMain from "./modules/Inventario/Productos/components/ProductosMa
 import ProductosRegister from "./modules/Inventario/Productos/components/ProductosRegister";
 import ProductosEdit from "./modules/Inventario/Productos/components/ProductosEdit";
 import CategoriasEdit from "./modules/Inventario/Categorias/components/CategoriasEdit";
+import ComprasMain from "./modules/Inventario/Compras/components/ComprasMain";
+import ComprasRegister from "./modules/Inventario/Compras/components/ComprasRegister";
+import CajasMain from "./modules/Cajas/components/CajasMain";
+import CajasRegister from "./modules/Cajas/components/CajasRegister";
+import CajasEdit from "./modules/Cajas/components/CajasEdit";
+import CajasControl from "./modules/Cajas/components/CajasControl";
+import VentasMain from "./modules/Ventas/components/VentasMain";
+import PuntoDeVenta from "./modules/Ventas/components/PuntoDeVenta";
+import UsuariosMain from "./modules/Administracion/Usuarios/components/UsuariosMain";
+import UsuariosRegister from "./modules/Administracion/Usuarios/components/UsuariosRegister";
 
 export default function App() {
   return (
@@ -49,6 +59,33 @@ export default function App() {
                     <Route index element={<CategoriasMain />} />
                     <Route path="registrar" element={<CategoriasRegister />} />
                     <Route path="editar/:id_categoria" element={<CategoriasEdit />} />
+                  </Route>
+                  <Route path="compras">
+                    <Route index element={<ComprasMain />} />
+                    <Route path="registrar" element={<ComprasRegister />} />
+                  </Route>
+                </Route>
+
+                {/* Cajas */}
+                <Route path="/cajas">
+                  <Route index element={<CajasMain />} />
+                  <Route path="registrar" element={<CajasRegister />} />
+                  <Route path="editar/:id" element={<CajasEdit />} />
+                  <Route path="control/:id" element={<CajasControl />} />
+                </Route>
+
+                {/* Ventas */}
+                <Route path="/ventas">
+                  <Route index element={<VentasMain />} />
+                  <Route path="pos" element={<PuntoDeVenta />} />
+                </Route>
+
+                {/* Usuarios (Administracion) */}
+                <Route path="/administracion">
+                  <Route path="usuarios">
+                    <Route index element={<UsuariosMain />} />
+                    <Route path="registrar" element={<UsuariosRegister />} />
+                    <Route path="editar/:id" element={<UserProfiles />} />
                   </Route>
                 </Route>
 

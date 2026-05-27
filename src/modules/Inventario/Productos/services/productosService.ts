@@ -10,28 +10,25 @@ const getHeaders = () => ({
 
 export const ProductosService = {
   async getProducts() {
-    const response = await axios.get(`${API_BASE_URL}/productos`, { headers: getHeaders() });
+    const response = await axios.get(`${API_BASE_URL}/inventario/producto`, {
+      headers: getHeaders(),
+    });
     return response;
   },
   async getProductById(id: number) {
-    const response = await axios.get(`${API_BASE_URL}/productos/${id}`, {
-      headers: getHeaders(),
-    });
+    const response = await axios.get(
+      `${API_BASE_URL}/inventario/producto/${id}`,
+      {
+        headers: getHeaders(),
+      },
+    );
     return response;
   },
   async createProduct(data: Producto) {
     const user: any = localStorage.getItem("user");
     data.id_user_create = JSON.parse(user).id;
-    const response = await axios.post(`${API_BASE_URL}/productos`, data, {
-      headers: getHeaders(),
-    });
-    return response;
-  },
-  async updateProduct(id: number, data: ProductoEditDto) {
-    const user: any = localStorage.getItem("user");
-    data.id_user_update = JSON.parse(user).id;
-    const response = await axios.patch(
-      `${API_BASE_URL}/productos/${id}`,
+    const response = await axios.post(
+      `${API_BASE_URL}/inventario/producto`,
       data,
       {
         headers: getHeaders(),
@@ -39,10 +36,21 @@ export const ProductosService = {
     );
     return response;
   },
-  async deleteProduct(id: number) {
-    const response = await axios.delete(`${API_BASE_URL}/productos/${id}`, {
+  async updateProduct(id: number, data: ProductoEditDto) {
+    const user: any = localStorage.getItem("user");
+    data.id_user_update = JSON.parse(user).id;
+    const response = await axios.patch(`${API_BASE_URL}/producto/${id}`, data, {
       headers: getHeaders(),
     });
+    return response;
+  },
+  async deleteProduct(id: number) {
+    const response = await axios.delete(
+      `${API_BASE_URL}/inventario/producto/${id}`,
+      {
+        headers: getHeaders(),
+      },
+    );
     return response;
   },
 };
