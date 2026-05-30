@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { useCaja } from "../../../../context/CajaContext";
 import { PlusIcon, TrashBinIcon } from "../../../../icons";
 import Button from "../../../../components/ui/button/Button";
 import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
@@ -21,7 +22,7 @@ const ComprasRegister = () => {
   const [detalles, setDetalles] = useState<DetalleCompraUi[]>([]);
   const [proveedor, setProveedor] = useState("");
   const [pagarConCaja, setPagarConCaja] = useState(false);
-  const [idSesionCaja, setIdSesionCaja] = useState<number | "">("");
+  const { sesionActiva } = useCaja();
 
   // UI States para agregar al carrito
   const [selectedProductId, setSelectedProductId] = useState<number | "">("");
@@ -92,8 +93,8 @@ const ComprasRegister = () => {
       return;
     }
 
-    if (pagarConCaja && !idSesionCaja) {
-      alert("Para pagar con caja debe especificar el ID de sesión de caja activa.");
+    if (pagarConCaja && !sesionActiva) {
+      alert("Para pagar con caja debe tener una sesión de caja activa abierta.");
       return;
     }
 
@@ -101,7 +102,7 @@ const ComprasRegister = () => {
       const payload: CrearCompraRequest = {
         proveedor: proveedor || undefined,
         pagar_con_caja: pagarConCaja,
-        id_sesion_caja: pagarConCaja ? Number(idSesionCaja) : undefined,
+        id_sesion_caja: pagarConCaja ? sesionActiva.id : undefined,
         detalles: detalles.map(({ id_producto, cantidad, costo_unitario }) => ({
           id_producto,
           cantidad,
@@ -184,14 +185,17 @@ const ComprasRegister = () => {
 
               {pagarConCaja && (
                 <div className="mb-4">
-                  <Label htmlFor="sesionCaja">ID Sesión de Caja Activa</Label>
-                  <Input
-                    type="number"
-                    id="sesionCaja"
-                    placeholder="Ej: 1"
-                    value={idSesionCaja}
-                    onChange={(e) => setIdSesionCaja(e.target.value === "" ? "" : Number(e.target.value))}
-                  />
+                  {sesionActiva ? (
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                      <p className="text-xs text-blue-700 dark:text-blue-400">
+                        <span className="font-semibold">Caja Activa:</span> {sesionActiva.caja?.nombre || `Caja #${sesionActiva.id_caja}`} (Sesión #{sesionActiva.id})
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-red-500 font-medium">
+                      No hay sesión de caja abierta. Abre una caja antes de marcar esta opción.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -227,7 +231,7 @@ const ComprasRegister = () => {
                   <Label>Costo Unit.</Label>
                   <Input
                     type="number"
-                    step="0.01"
+                    step={0.01}
                     min="0"
                     value={costoUnitario}
                     onChange={(e) => setCostoUnitario(Number(e.target.value))}

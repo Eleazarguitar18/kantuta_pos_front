@@ -149,7 +149,7 @@ const ProductosMain = () => {
         </div>
       ),
       ignoreRowClick: true,
-      minWidth: "300px",
+      width: "300px",
     },
   ];
 

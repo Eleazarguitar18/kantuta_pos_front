@@ -40,8 +40,14 @@ export const CajasService = {
   },
 
   // Operaciones de Sesión y Movimientos
+  async getSesionActivaUsuario(idUsuario: number) {
+    return await axios.get(`${API_BASE_URL}/cajas/sesion-activa/${idUsuario}`, {
+      headers: getHeaders(),
+    });
+  },
   async abrirSesion(data: AbrirCajaRequest) {
     data.id_user_create = getUserId();
+    data.id_usuario = getUserId();
     return await axios.post(`${API_BASE_URL}/cajas/abrir`, data, { headers: getHeaders() });
   },
   async cerrarSesion(id_sesion: number, data: CerrarCajaRequest) {

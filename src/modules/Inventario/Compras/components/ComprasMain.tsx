@@ -102,7 +102,7 @@ const ComprasMain = () => {
         </div>
       ),
       ignoreRowClick: true,
-      minWidth: "150px",
+      width: "150px",
     },
   ];
 

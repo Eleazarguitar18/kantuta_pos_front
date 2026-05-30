@@ -20,6 +20,7 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import ProtectedRoute from "./router/ProtectedRoute";
 import { AuthContextProvider } from "./context/auth/AuthContext";
+import { CajaProvider } from "./context/CajaContext";
 import CategoriasRegister from "./modules/Inventario/Categorias/components/CategoriasRegister";
 import CategoriasMain from "./modules/Inventario/Categorias/components/CategoriasMain";
 import ProductosMain from "./modules/Inventario/Productos/components/ProductosMain";
@@ -41,7 +42,8 @@ export default function App() {
   return (
     <>
       <AuthContextProvider>
-        <Router>
+        <CajaProvider>
+          <Router>
           <ScrollToTop />
           <Routes>
             <Route path="/" element={<ProtectedRoute />}>
@@ -120,7 +122,8 @@ export default function App() {
             {/* Fallback Route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </Router>
+          </Router>
+        </CajaProvider>
       </AuthContextProvider>
     </>
   );

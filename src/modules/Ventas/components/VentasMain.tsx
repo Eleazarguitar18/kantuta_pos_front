@@ -143,7 +143,7 @@ const VentasMain = () => {
         </div>
       ),
       ignoreRowClick: true,
-      minWidth: "200px",
+      width: "200px",
     },
   ];
 

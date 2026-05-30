@@ -9,10 +9,12 @@ import { CajasService } from "../services/cajasService";
 import Alert from "../../../components/ui/alert/Alert";
 import { Caja, SesionCaja } from "../interfaces/Caja";
 import ComponentCard from "../../../components/common/ComponentCard";
+import { useCaja } from "../../../context/CajaContext";
 
 const CajasControl = () => {
   const [caja, setCaja] = useState<Caja | null>(null);
   const [sesionActiva, setSesionActiva] = useState<SesionCaja | null>(null);
+  const { abrirCaja, cerrarCaja } = useCaja();
 
   // Form states - Abrir Sesión
   const [montoInicial, setMontoInicial] = useState<number>(0);
@@ -51,12 +53,7 @@ const CajasControl = () => {
   const handleAbrirSesion = async () => {
     if (montoInicial < 0) return alert("El monto inicial debe ser válido.");
     try {
-      await CajasService.abrirSesion({
-        id_caja: Number(id),
-        monto_inicial: montoInicial,
-        id_usuario: 0, // se tomará del token en backend idealmente, pero el form lo manda como 0 para que el service lo parsee
-        id_user_create: 0
-      });
+      await abrirCaja(Number(id), montoInicial);
       setAlertMessage("Sesión abierta correctamente.");
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);
@@ -71,10 +68,7 @@ const CajasControl = () => {
     if (!sesionActiva) return;
     if (montoFinalReal < 0) return alert("El monto final real debe ser válido.");
     try {
-      await CajasService.cerrarSesion(sesionActiva.id, {
-        monto_final_real: montoFinalReal,
-        id_user_update: 0
-      });
+      await cerrarCaja(montoFinalReal, sesionActiva.id);
       setAlertMessage("Sesión cerrada correctamente. Arqueo finalizado.");
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);

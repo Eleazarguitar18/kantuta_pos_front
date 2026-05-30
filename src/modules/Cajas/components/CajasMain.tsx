@@ -114,7 +114,7 @@ const CajasMain = () => {
         </div>
       ),
       ignoreRowClick: true,
-      minWidth: "350px",
+      width: "350px",
     },
   ];
 

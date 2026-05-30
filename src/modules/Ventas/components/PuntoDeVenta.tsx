@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { BoxIcon, PlusIcon, TrashBinIcon} from "../../../icons";
+import { BoxIcon, TrashBinIcon} from "../../../icons";
+import { useCaja } from "../../../context/CajaContext";
 import Button from "../../../components/ui/button/Button";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
-import Input from "../../../components/form/input/InputField";
 import Select from "../../../components/form/Select";
 import { VentasService } from "../services/ventasService";
 import { ProductosService } from "../../Inventario/Productos/services/productosService";
@@ -11,6 +11,8 @@ import { Producto } from "../../Inventario/Productos/interfaces/Producto";
 import { DetalleVentaInput, CrearVentaRequest } from "../interfaces/VentaDTO";
 import Alert from "../../../components/ui/alert/Alert";
 import Label from "../../../components/form/Label";
+import { Modal } from "../../../components/ui/modal";
+import { useModal } from "../../../hooks/useModal";
 
 interface CartItem extends DetalleVentaInput {
   producto_nombre: string;
@@ -23,7 +25,9 @@ const PuntoDeVenta = () => {
   
   const [cart, setCart] = useState<CartItem[]>([]);
   const [metodoPago, setMetodoPago] = useState<"EFECTIVO" | "QR" | "TRANSFERENCIA">("EFECTIVO");
-  const [idSesionCaja, setIdSesionCaja] = useState<number | "">("");
+  const { sesionActiva, loading: loadingCaja } = useCaja();
+  const { isOpen, openModal, closeModal } = useModal();
+  const [createdVenta, setCreatedVenta] = useState<any | null>(null);
 
   const [showAlert, setShowAlert] = useState(false);
   const [showError, setShowError] = useState(false);
@@ -100,25 +104,36 @@ const PuntoDeVenta = () => {
 
   const handleCheckout = async () => {
     if (cart.length === 0) return alert("El carrito está vacío.");
-    if (!idSesionCaja) return alert("Debe especificar la sesión de caja activa (ID) para procesar la venta.");
+    if (!sesionActiva) return alert("Debe tener una sesión de caja activa abierta para procesar la venta.");
 
     try {
       const payload: CrearVentaRequest = {
         metodo_pago: metodoPago,
-        id_sesion_caja: Number(idSesionCaja),
+        id_sesion_caja: sesionActiva.id,
         detalles: cart.map(({ id_producto, cantidad, precio_unitario }) => ({
           id_producto,
           cantidad,
-          precio_unitario
+          precio_unitario: Number(precio_unitario) || 0
         })),
         id_user_create: 0
       };
 
       const response = await VentasService.createVenta(payload);
       if (response.status === 201 || response.status === 200) {
+        setCreatedVenta({
+          ...response.data,
+          // Guardamos una copia de los nombres de los productos para mostrarlos en el modal
+          detalles_con_nombre: cart.map(item => ({
+            nombre: item.producto_nombre,
+            cantidad: item.cantidad,
+            precio_unitario: item.precio_unitario,
+            subtotal: item.cantidad * item.precio_unitario
+          }))
+        });
         setShowAlert(true);
         setCart([]); // limpiar carrito
         setTimeout(() => setShowAlert(false), 3000);
+        openModal();
       }
     } catch (error) {
       setShowError(true);
@@ -126,6 +141,40 @@ const PuntoDeVenta = () => {
       console.error("Error al registrar venta", error);
     }
   };
+
+  const handleModalClose = () => {
+    closeModal();
+    navigate("/ventas");
+  };
+
+  if (loadingCaja) {
+    return <div className="p-6 text-center">Cargando datos de caja...</div>;
+  }
+
+  if (!sesionActiva) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-md w-full bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 text-center space-y-6">
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto text-red-600 dark:text-red-400">
+            <TrashBinIcon className="w-8 h-8" color="currentColor" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Caja Cerrada o Inactiva</h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            No tienes un turno de caja abierto en este momento. Es obligatorio iniciar la sesión de caja e ingresar el saldo inicial antes de registrar cualquier venta.
+          </p>
+          <div className="flex flex-col space-y-3">
+            <Button
+              variant="primary"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => navigate("/cajas")}
+            >
+              Ir a Control de Cajas
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -277,15 +326,10 @@ const PuntoDeVenta = () => {
                   defaultValue={metodoPago}
                 />
               </div>
-              <div>
-                <Label>ID Sesión de Caja Activa</Label>
-                <Input
-                  type="number"
-                  placeholder="Ej: 1"
-                  value={idSesionCaja}
-                  onChange={(e) => setIdSesionCaja(e.target.value === "" ? "" : Number(e.target.value))}
-                />
-                <p className="text-xs text-gray-500 mt-1">Obligatorio para que ingrese a caja</p>
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                <p className="text-xs text-blue-700 dark:text-blue-400">
+                  <span className="font-semibold">Caja Activa:</span> {sesionActiva.caja?.nombre || `Caja #${sesionActiva.id_caja}`} (Sesión #{sesionActiva.id})
+                </p>
               </div>
               
               <Button
@@ -301,6 +345,75 @@ const PuntoDeVenta = () => {
         </div>
 
       </div>
+
+      {/* Modal de Ticket Exitoso */}
+      <Modal
+        isOpen={isOpen}
+        onClose={handleModalClose}
+        className="max-w-md p-6"
+      >
+        {createdVenta && (
+          <div className="space-y-6">
+            <div className="text-center pb-4 border-b border-dashed border-gray-200 dark:border-gray-700">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white">
+                ¡Venta Registrada!
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">Ticket #{createdVenta.id}</p>
+            </div>
+
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Fecha:</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">
+                  {new Date(createdVenta.fecha || new Date()).toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Método de Pago:</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">{createdVenta.metodo_pago}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Caja / Turno:</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">Sesión #{createdVenta.id_sesion_caja}</span>
+              </div>
+            </div>
+
+            <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
+              <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-3">Productos</h4>
+              <div className="space-y-3">
+                {createdVenta.detalles_con_nombre?.map((det: any, idx: number) => (
+                  <div key={idx} className="flex justify-between text-sm">
+                    <div className="flex-1 pr-4">
+                      <p className="font-medium text-gray-800 dark:text-gray-200">{det.nombre}</p>
+                      <p className="text-xs text-gray-500">
+                        {det.cantidad} x Bs. {Number(det.precio_unitario).toFixed(2)}
+                      </p>
+                    </div>
+                    <span className="font-semibold text-gray-800 dark:text-white">
+                      Bs. {Number(det.subtotal).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 flex justify-between items-center text-lg font-bold text-green-600 dark:text-green-500">
+              <span>Total:</span>
+              <span>Bs. {Number(createdVenta.total).toFixed(2)}</span>
+            </div>
+
+            <div className="pt-4">
+              <Button
+                variant="primary"
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3"
+                onClick={handleModalClose}
+              >
+                Aceptar / Ir al Historial
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
