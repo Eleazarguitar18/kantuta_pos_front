@@ -30,6 +30,9 @@ function ProductosRegister() {
     },
   });
 
+  // Watch the entire form to trigger re-renders when setValue is called or when typing
+  form.watch();
+
   // Cargar categorías para el selector
   useEffect(() => {
     const fetchCategorias = async () => {

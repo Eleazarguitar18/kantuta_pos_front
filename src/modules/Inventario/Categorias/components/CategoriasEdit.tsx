@@ -20,6 +20,7 @@ function CategoriasEdit() {
       nombre: "",
     },
   });
+  form.watch();
   const location = useLocation();
   const categoriaAEditar: CategoriaEditDto = location.state as CategoriaEditDto; // Aquí atrapamos el objeto
   const { id_categoria } = useParams();

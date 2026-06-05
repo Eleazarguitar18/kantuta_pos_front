@@ -19,6 +19,7 @@ function CategoriasRegister() {
       nombre: "",
     },
   });
+  form.watch();
   const onSubmit = async (data: Categoria) => {
     try {
       console.log("Datos que se enviarán a la API:", data);

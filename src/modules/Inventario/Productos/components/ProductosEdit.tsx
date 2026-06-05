@@ -33,6 +33,9 @@ function ProductosEdit() {
     },
   });
 
+  // Watch the entire form to trigger re-renders when setValue is called or when typing
+  form.watch();
+
   const productoAEditar = location.state as Producto;
 
   // Cargar categorías para el selector
@@ -117,8 +120,9 @@ function ProductosEdit() {
       data.stock_minimo = Number(data.stock_minimo);
 
       console.log("Datos que se enviarán a la API para actualizar:", data);
+      const productId = id_producto ? parseInt(id_producto) : (productoAEditar?.id || 0);
       const response = await ProductosService.updateProduct(
-        parseInt(id_producto!),
+        productId,
         data,
       );
 
