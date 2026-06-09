@@ -422,38 +422,67 @@ const CajasControl = () => {
         {/* Panel 3: Gestión de Recargas (Solo Activo con Sesión Abierta) */}
         <div className="space-y-6">
           <ComponentCard title="Líneas y Operaciones de Recargas">
-            {/* Saldos Actuales */}
-            <div className="mb-4">
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Saldos de Líneas Disponibles</h4>
-              <div className="grid grid-cols-3 gap-2">
-                {proveedores.map(p => (
-                  <div key={p.id} className="p-2 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-lg text-center">
-                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block font-medium uppercase">{p.nombre}</span>
-                    <span className="text-sm font-bold text-gray-900 dark:text-white">Bs. {p.saldo_actual}</span>
-                    <span className="text-[9px] text-green-500 block">Com: {p.comision_porcentaje}%</span>
-                  </div>
-                ))}
+            {/* Saldos Actuales - Dashboard Premium */}
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Liquidez Actual en Líneas</h4>
+              <div className="grid grid-cols-1 gap-3">
+                {proveedores.map(p => {
+                  const saldo = Number(p.saldo_actual);
+                  let statusColor = "border-green-200 bg-green-50/50 text-green-700 dark:bg-green-950/20 dark:border-green-800 dark:text-green-400";
+                  let statusText = "Disponible";
+                  if (saldo < 50) {
+                    statusColor = "border-red-200 bg-red-50/50 text-red-700 dark:bg-red-950/20 dark:border-red-800 dark:text-red-400 animate-pulse";
+                    statusText = "Crítico - Inyectar";
+                  } else if (saldo < 100) {
+                    statusColor = "border-amber-200 bg-amber-50/50 text-amber-700 dark:bg-amber-950/20 dark:border-amber-800 dark:text-amber-400";
+                    statusText = "Liquidez Baja";
+                  }
+
+                  // Brand Colors for UI accents
+                  let brandBorder = "border-l-4 border-l-blue-600";
+                  if (p.nombre.toLowerCase() === "viva") brandBorder = "border-l-4 border-l-green-500";
+                  if (p.nombre.toLowerCase() === "tigo") brandBorder = "border-l-4 border-l-blue-900";
+                  if (p.nombre.toLowerCase() === "entel") brandBorder = "border-l-4 border-l-orange-500";
+
+                  return (
+                    <div key={p.id} className={`flex justify-between items-center p-3 border border-gray-200 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-800/40 rounded-xl ${brandBorder}`}>
+                      <div>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 block font-bold uppercase tracking-wider">{p.nombre}</span>
+                        <span className={`inline-block text-[10px] px-2 py-0.5 mt-1 rounded-full border font-semibold ${statusColor}`}>
+                          {statusText}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-lg font-extrabold text-gray-900 dark:text-white block">Bs. {saldo.toFixed(2)}</span>
+                        <span className="text-[10px] text-gray-500">Comisión: {p.comision_porcentaje}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-4">
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Registrar Transacción de Recarga</h4>
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Registrar Operación</h4>
               
               <div>
                 <Label>Tipo de Transacción</Label>
                 <Select
                   options={[
-                    { value: "VENTA_RECARGA", label: "Vender Recarga a Cliente (+ Caja / - Línea)" },
-                    { value: "COMPRA_SALDO", label: "Comprar Saldo Mayorista (- Caja / + Línea)" }
+                    { value: "VENTA_RECARGA", label: "Vender Recarga a Cliente" },
+                    { value: "COMPRA_SALDO", label: "Inyectar Capital / Cargar Línea (Desde Caja)" }
                   ]}
-                  onChange={(val) => setTipoOpRecarga(val as "VENTA_RECARGA" | "COMPRA_SALDO")}
+                  onChange={(val) => {
+                    setTipoOpRecarga(val as "VENTA_RECARGA" | "COMPRA_SALDO");
+                    setMontoRecarga(0);
+                  }}
                   defaultValue={tipoOpRecarga}
                   disabled={!sesionActiva}
                 />
               </div>
 
               <div>
-                <Label>Operador Telefónico</Label>
+                <Label>Operador Telefónico Destino</Label>
                 <Select
                   options={proveedores.map(p => ({ value: String(p.id), label: p.nombre }))}
                   onChange={(val) => setIdProveedorSeleccionado(Number(val))}
@@ -464,16 +493,48 @@ const CajasControl = () => {
 
               <div>
                 <Label>Monto (Bs.)</Label>
-                <Input
-                  type="number"
-                  step={1}
-                  min="1"
-                  value={montoRecarga || ""}
-                  onChange={(e) => setMontoRecarga(Number(e.target.value))}
-                  disabled={!sesionActiva}
-                  placeholder="Monto de recarga"
-                />
+                <div className="space-y-2">
+                  <Input
+                    type="number"
+                    step={1}
+                    min="1"
+                    value={montoRecarga || ""}
+                    onChange={(e) => setMontoRecarga(Number(e.target.value))}
+                    disabled={!sesionActiva}
+                    placeholder="Ingrese monto a transferir/recargar"
+                  />
+                  {/* Montos rápidos para agilizar la operación en el punto de venta */}
+                  {sesionActiva && (
+                    <div className="flex gap-2">
+                      {[10, 20, 50, 100].map(amount => (
+                        <button
+                          key={amount}
+                          type="button"
+                          onClick={() => setMontoRecarga(amount)}
+                          className="flex-1 py-1 px-2 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 transition"
+                        >
+                          Bs. {amount}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Validación dinámica en caliente */}
+              {tipoOpRecarga === "VENTA_RECARGA" && (
+                (() => {
+                  const prov = proveedores.find(p => p.id === idProveedorSeleccionado);
+                  if (prov && montoRecarga > Number(prov.saldo_actual)) {
+                    return (
+                      <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-lg text-xs text-red-600 dark:text-red-400 font-semibold">
+                        ⚠️ Saldo insuficiente en la línea de {prov.nombre}. Disponible: Bs. {Number(prov.saldo_actual).toFixed(2)}
+                      </div>
+                    );
+                  }
+                  return null;
+                })()
+              )}
 
               {tipoOpRecarga === "VENTA_RECARGA" ? (
                 <div>
@@ -488,24 +549,42 @@ const CajasControl = () => {
                 </div>
               ) : (
                 <div>
-                  <Label>Nro. Referencia (Depósito / Pago)</Label>
+                  <Label>Nro. Referencia de Operación / Justificación</Label>
                   <Input
                     type="text"
                     value={nroReferencia}
                     onChange={(e) => setNroReferencia(e.target.value)}
                     disabled={!sesionActiva}
-                    placeholder="Ej. DEP-55443"
+                    placeholder="Ej. DEP-55443 o Ajuste Interno"
                   />
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    Esta inyección restará liquidez de la caja física y la transferirá a la línea seleccionada.
+                  </p>
                 </div>
               )}
 
               <Button
                 variant="primary"
-                className={`w-full text-white bg-blue-600 hover:bg-blue-700 ${!sesionActiva ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`w-full text-white ${
+                  tipoOpRecarga === "VENTA_RECARGA"
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-emerald-600 hover:bg-emerald-700"
+                } ${
+                  !sesionActiva || (tipoOpRecarga === "VENTA_RECARGA" && (() => {
+                    const prov = proveedores.find(p => p.id === idProveedorSeleccionado);
+                    return prov && montoRecarga > Number(prov.saldo_actual);
+                  })()) ? "opacity-50 cursor-not-allowed" : ""
+                }`}
                 onClick={handleRegistrarRecarga}
-                disabled={!sesionActiva}
+                disabled={
+                  !sesionActiva ||
+                  (tipoOpRecarga === "VENTA_RECARGA" && (() => {
+                    const prov = proveedores.find(p => p.id === idProveedorSeleccionado);
+                    return prov && montoRecarga > Number(prov.saldo_actual);
+                  })())
+                }
               >
-                Procesar {tipoOpRecarga === "VENTA_RECARGA" ? "Venta" : "Compra"}
+                {tipoOpRecarga === "VENTA_RECARGA" ? "Confirmar Venta de Recarga" : "Confirmar Inyección de Fondos"}
               </Button>
             </div>
 
@@ -518,7 +597,7 @@ const CajasControl = () => {
                   <span className="font-semibold text-green-600">Bs. {resumenRecargas.total_ventas || 0}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">Total Compras (Egreso):</span>
+                  <span className="text-gray-500">Total Inyecciones (Egreso Caja):</span>
                   <span className="font-semibold text-red-500">Bs. {resumenRecargas.total_compras || 0}</span>
                 </div>
               </div>
