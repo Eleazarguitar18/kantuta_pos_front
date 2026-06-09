@@ -39,9 +39,13 @@ export const ProductosService = {
   async updateProduct(id: number, data: ProductoEditDto) {
     const user: any = localStorage.getItem("user");
     data.id_user_update = JSON.parse(user).id;
-    const response = await axios.patch(`${API_BASE_URL}/producto/${id}`, data, {
-      headers: getHeaders(),
-    });
+    const response = await axios.patch(
+      `${API_BASE_URL}/inventario/producto/${id}`,
+      data,
+      {
+        headers: getHeaders(),
+      },
+    );
     return response;
   },
   async deleteProduct(id: number) {

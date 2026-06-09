@@ -1,5 +1,5 @@
 import axios from "axios";
-import { API_BASE_URL } from "../../../components/auth/services/urlBase";
+import { API_BASE_URL } from "../auth/services/urlBase";
 
 const getHeaders = () => ({
   "Content-Type": "application/json",
@@ -20,7 +20,7 @@ export interface DashboardStats {
 
 export const DashboardService = {
   async getStats(anio?: number): Promise<{ data: DashboardStats }> {
-    const url = anio 
+    const url = anio
       ? `${API_BASE_URL}/reportes/dashboard-stats?anio=${anio}`
       : `${API_BASE_URL}/reportes/dashboard-stats`;
     return await axios.get(url, { headers: getHeaders() });
