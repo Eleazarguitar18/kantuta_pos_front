@@ -35,6 +35,7 @@ import CajasEdit from "./modules/Cajas/components/CajasEdit";
 import CajasControl from "./modules/Cajas/components/CajasControl";
 import VentasMain from "./modules/Ventas/components/VentasMain";
 import PuntoDeVenta from "./modules/Ventas/components/PuntoDeVenta";
+import RecargasMain from "./modules/Ventas/components/RecargasMain";
 import UsuariosMain from "./modules/Administracion/Usuarios/components/UsuariosMain";
 import UsuariosRegister from "./modules/Administracion/Usuarios/components/UsuariosRegister";
 
@@ -80,6 +81,7 @@ export default function App() {
                 <Route path="/ventas">
                   <Route index element={<VentasMain />} />
                   <Route path="pos" element={<PuntoDeVenta />} />
+                  <Route path="recargas" element={<RecargasMain />} />
                 </Route>
 
                 {/* Usuarios (Administracion) */}

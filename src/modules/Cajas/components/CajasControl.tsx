@@ -6,42 +6,29 @@ import Label from "../../../components/form/Label";
 import Input from "../../../components/form/input/InputField";
 import Select from "../../../components/form/Select";
 import { CajasService } from "../services/cajasService";
-import { RecargasService } from "../services/recargasService";
 import Alert from "../../../components/ui/alert/Alert";
 import { Caja, SesionCaja } from "../interfaces/Caja";
 import ComponentCard from "../../../components/common/ComponentCard";
 import { useCaja } from "../../../context/CajaContext";
 
 const CajasControl = () => {
+  // Core data
   const [caja, setCaja] = useState<Caja | null>(null);
   const [sesionActiva, setSesionActiva] = useState<SesionCaja | null>(null);
   const { abrirCaja, cerrarCaja } = useCaja();
 
-  // Form states - Abrir Sesión
+  // Form state – apertura
   const [montoInicial, setMontoInicial] = useState<number>(0);
-  
-  // Form states - Cerrar Sesión
+
+  // Form state – cierre (pre‑llenado con balance teórico)
   const [montoFinalReal, setMontoFinalReal] = useState<number>(0);
 
-  // Form states - Movimiento
+  // Movimiento de efectivo
   const [tipoMovimiento, setTipoMovimiento] = useState<"INGRESO" | "EGRESO">("INGRESO");
   const [montoMovimiento, setMontoMovimiento] = useState<number>(0);
   const [motivoMovimiento, setMotivoMovimiento] = useState<string>("");
 
-  // Recargas States
-  const [proveedores, setProveedores] = useState<any[]>([]);
-  const [saldosIniciales, setSaldosIniciales] = useState<{ [key: number]: number }>({});
-  const [saldosFinales, setSaldosFinales] = useState<{ [key: number]: number }>({});
-  const [controlesRecarga, setControlesRecarga] = useState<any[]>([]);
-  const [resumenRecargas, setResumenRecargas] = useState<any | null>(null);
-
-  // Form states - Registrar Operación Recarga
-  const [tipoOpRecarga, setTipoOpRecarga] = useState<"VENTA_RECARGA" | "COMPRA_SALDO">("VENTA_RECARGA");
-  const [idProveedorSeleccionado, setIdProveedorSeleccionado] = useState<number>(0);
-  const [montoRecarga, setMontoRecarga] = useState<number>(0);
-  const [numeroTelefono, setNumeroTelefono] = useState<string>("");
-  const [nroReferencia, setNroReferencia] = useState<string>("");
-
+  // UI feedback
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [showError, setShowError] = useState(false);
@@ -49,27 +36,6 @@ const CajasControl = () => {
 
   const navigate = useNavigate();
   const { id } = useParams();
-
-  const fetchProveedores = async () => {
-    try {
-      await RecargasService.seedProveedores();
-      const res = await RecargasService.getProveedores();
-      setProveedores(res.data);
-      if (res.data.length > 0) {
-        setIdProveedorSeleccionado(res.data[0].id);
-        const init: { [key: number]: number } = {};
-        const fin: { [key: number]: number } = {};
-        res.data.forEach((p: any) => {
-          init[p.id] = 0;
-          fin[p.id] = 0;
-        });
-        setSaldosIniciales(init);
-        setSaldosFinales(fin);
-      }
-    } catch (error) {
-      console.error("Error al obtener proveedores", error);
-    }
-  };
 
   const fetchCajaData = async () => {
     try {
@@ -79,13 +45,10 @@ const CajasControl = () => {
       const activa = data.sesiones?.find(s => s.estado_sesion === "ABIERTA");
       setSesionActiva(activa || null);
       if (activa) {
-        // Cargar controles de recargas de la sesión
-        const resumenRes = await RecargasService.getResumenSesion(activa.id);
-        setResumenRecargas(resumenRes.data);
-        setControlesRecarga(resumenRes.data.controles || []);
-      } else {
-        setResumenRecargas(null);
-        setControlesRecarga([]);
+        const balanceRes = await CajasService.getSesionBalance(activa.id);
+        if (balanceRes && balanceRes.data) {
+          setMontoFinalReal(Number(balanceRes.data.monto_final_teorico));
+        }
       }
     } catch (error) {
       console.error("Error al cargar datos de la caja", error);
@@ -93,29 +56,17 @@ const CajasControl = () => {
   };
 
   useEffect(() => {
-    fetchProveedores();
     fetchCajaData();
   }, [id]);
 
   const handleAbrirSesion = async () => {
     if (montoInicial < 0) return alert("El monto inicial debe ser válido.");
     try {
-      const nuevaSesion = await abrirCaja(Number(id), montoInicial);
-      if (nuevaSesion && nuevaSesion.id) {
-        const saldosArr = Object.entries(saldosIniciales).map(([provId, saldo]) => ({
-          id_proveedor: Number(provId),
-          saldo_inicial: Number(saldo),
-        }));
-        await RecargasService.inicializarSaldosSesion({
-          id_sesion_caja: nuevaSesion.id,
-          saldos: saldosArr,
-        });
-      }
-      setAlertMessage("Sesión abierta y saldos de recargas inicializados.");
+      await abrirCaja(Number(id), montoInicial);
+      setAlertMessage("Sesión abierta correctamente.");
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);
       fetchCajaData();
-      fetchProveedores();
     } catch (error) {
       setErrorMessage("Hubo un problema al abrir la sesión.");
       setShowError(true);
@@ -127,20 +78,11 @@ const CajasControl = () => {
     if (!sesionActiva) return;
     if (montoFinalReal < 0) return alert("El monto final real debe ser válido.");
     try {
-      const saldosArr = Object.entries(saldosFinales).map(([provId, saldo]) => ({
-        id_proveedor: Number(provId),
-        saldo_final_real: Number(saldo),
-      }));
-      await RecargasService.finalizarSaldosSesion(sesionActiva.id, {
-        saldos: saldosArr,
-      });
-
       await cerrarCaja(montoFinalReal, sesionActiva.id);
-      setAlertMessage("Sesión cerrada correctamente. Arqueo de caja y recargas completado.");
+      setAlertMessage("Sesión cerrada correctamente.");
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);
       fetchCajaData();
-      fetchProveedores();
     } catch (error) {
       setErrorMessage("Hubo un problema al cerrar la sesión.");
       setShowError(true);
@@ -164,44 +106,11 @@ const CajasControl = () => {
       setTimeout(() => setShowAlert(false), 3000);
       setMontoMovimiento(0);
       setMotivoMovimiento("");
+      fetchCajaData();
     } catch (error) {
       setErrorMessage("Error al registrar movimiento.");
       setShowError(true);
       setTimeout(() => setShowError(false), 3000);
-    }
-  };
-
-  const handleRegistrarRecarga = async () => {
-    if (!sesionActiva) return;
-    if (montoRecarga <= 0) return alert("Ingrese un monto de recarga válido.");
-    if (tipoOpRecarga === "VENTA_RECARGA" && !numeroTelefono) return alert("Ingrese el número de celular del cliente.");
-    if (tipoOpRecarga === "COMPRA_SALDO" && !nroReferencia) return alert("Ingrese el número de referencia del depósito.");
-
-    try {
-      await RecargasService.registrarTransaccion({
-        tipo_operacion: tipoOpRecarga,
-        id_proveedor: idProveedorSeleccionado,
-        monto: montoRecarga,
-        numero_telefono: tipoOpRecarga === "VENTA_RECARGA" ? numeroTelefono : undefined,
-        nro_referencia: tipoOpRecarga === "COMPRA_SALDO" ? nroReferencia : undefined,
-        id_sesion_caja: sesionActiva.id,
-      });
-
-      setAlertMessage(`${tipoOpRecarga === "VENTA_RECARGA" ? "Venta" : "Compra"} de recarga registrada con éxito.`);
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 3000);
-      setMontoRecarga(0);
-      setNumeroTelefono("");
-      setNroReferencia("");
-      
-      // Recargar datos actualizados
-      fetchCajaData();
-      fetchProveedores();
-    } catch (error: any) {
-      const msg = error.response?.data?.message || "Error al procesar la operación de recarga.";
-      setErrorMessage(msg);
-      setShowError(true);
-      setTimeout(() => setShowError(false), 4000);
     }
   };
 
@@ -213,19 +122,12 @@ const CajasControl = () => {
 
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-            {caja.nombre}
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{caja.nombre}</h2>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Especialidad: {caja.especialidad.replace("_", " ")}
           </p>
         </div>
-        <Button
-          className="bg-gray-500 hover:bg-gray-600 text-white"
-          onClick={() => navigate("/cajas")}
-        >
-          Volver
-        </Button>
+        <Button className="bg-gray-500 hover:bg-gray-600 text-white" onClick={() => navigate("/cajas")}>Volver</Button>
       </div>
 
       {showAlert && (
@@ -239,8 +141,8 @@ const CajasControl = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Panel 1: Estado de Sesión / Apertura / Cierre */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Panel 1 – Estado y apertura/cierre */}
         <div className="space-y-6">
           <ComponentCard title="Estado Actual de la Caja">
             {sesionActiva ? (
@@ -251,40 +153,8 @@ const CajasControl = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-400">Apertura: <span className="font-medium text-gray-900 dark:text-gray-100">{new Date(sesionActiva.fecha_apertura).toLocaleString()}</span></p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Monto Inicial: <span className="font-semibold text-gray-900 dark:text-gray-100">Bs. {sesionActiva.monto_inicial}</span></p>
                 </div>
-
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                   <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">Cerrar Sesión (Arqueo)</h4>
-                  
-                  {/* Formulario de conteo físico de recargas antes de cerrar */}
-                  <div className="mb-4 bg-gray-50 dark:bg-gray-800/40 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <h5 className="font-semibold text-xs text-gray-700 dark:text-gray-300 mb-2">Arqueo Final Recargas (Saldo en Línea)</h5>
-                    <div className="grid grid-cols-1 gap-2">
-                      {proveedores.map(p => (
-                        <div key={p.id} className="flex justify-between items-center">
-                          <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">{p.nombre}</label>
-                          <div className="w-1/2">
-                            <Input
-                              type="number"
-                              step={0.10}
-                              min="0"
-                              placeholder="Físico real"
-                              value={saldosFinales[p.id] || ""}
-                              onChange={(e) => setSaldosFinales({
-                                ...saldosFinales,
-                                [p.id]: Number(e.target.value)
-                              })}
-                            />
-                            {controlesRecarga.find(c => c.proveedor === p.nombre) && (
-                              <span className="text-[10px] text-blue-500 block text-right mt-0.5">
-                                Teórico: Bs. {controlesRecarga.find(c => c.proveedor === p.nombre)?.saldo_final_teorico}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
                   <div className="mb-3">
                     <Label>Dinero Físico en Caja (Bs.)</Label>
                     <Input
@@ -292,16 +162,10 @@ const CajasControl = () => {
                       step={0.10}
                       min="0"
                       value={montoFinalReal}
-                      onChange={(e) => setMontoFinalReal(Number(e.target.value))}
+                      onChange={e => setMontoFinalReal(Number(e.target.value))}
                     />
                   </div>
-                  <Button
-                    variant="primary"
-                    className="w-full bg-red-600 hover:bg-red-700 text-white"
-                    onClick={handleCerrarSesion}
-                  >
-                    Confirmar Cierre de Caja
-                  </Button>
+                  <Button variant="primary" className="w-full bg-red-600 hover:bg-red-700 text-white" onClick={handleCerrarSesion}>Confirmar Cierre de Caja</Button>
                 </div>
               </div>
             ) : (
@@ -310,74 +174,38 @@ const CajasControl = () => {
                   <h4 className="text-lg font-semibold text-gray-500 dark:text-gray-400">Caja Cerrada</h4>
                   <p className="text-sm text-gray-400 mt-1">No hay una sesión activa para esta caja.</p>
                 </div>
-
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                   <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">Abrir Nueva Sesión</h4>
-                  
-                  <div className="mb-4 bg-gray-50 dark:bg-gray-800/40 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <h5 className="font-semibold text-xs text-gray-700 dark:text-gray-300 mb-2">Inicializar Saldos Recargas (Líneas)</h5>
-                    <div className="grid grid-cols-3 gap-2">
-                      {proveedores.map(p => (
-                        <div key={p.id}>
-                          <label className="text-[10px] text-gray-600 dark:text-gray-400 font-medium block mb-1">{p.nombre}</label>
-                          <Input
-                            type="number"
-                            step={0.10}
-                            min="0"
-                            value={saldosIniciales[p.id] || ""}
-                            onChange={(e) => setSaldosIniciales({
-                              ...saldosIniciales,
-                              [p.id]: Number(e.target.value)
-                            })}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
                   <div className="mb-3">
-                    <Label>Monto Inicial / Sencillo (Bs.)</Label>
+                    <Label>Monto Inicial (Bs.)</Label>
                     <Input
                       type="number"
                       step={0.10}
                       min="0"
                       value={montoInicial}
-                      onChange={(e) => setMontoInicial(Number(e.target.value))}
+                      onChange={e => setMontoInicial(Number(e.target.value))}
                     />
                   </div>
-                  <Button
-                    variant="primary"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                    onClick={handleAbrirSesion}
-                  >
-                    Abrir Caja
-                  </Button>
+                  <Button variant="primary" className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={handleAbrirSesion}>Abrir Caja</Button>
                 </div>
               </div>
             )}
           </ComponentCard>
         </div>
 
-        {/* Panel 2: Movimientos de Caja Chica */}
+        {/* Panel 2 – Movimiento de efectivo */}
         <div className="space-y-6">
           <ComponentCard title="Movimiento de Efectivo">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Registra transacciones de efectivo ordinarias que alteran el cuadre directo de caja.
-            </p>
-            
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Registra transacciones de efectivo ordinarias que alteran el cuadre directo de caja.</p>
             <div className="space-y-4">
               <div>
                 <Label>Tipo de Movimiento</Label>
                 <Select
-                  options={[
-                    { value: "INGRESO", label: "Ingreso (+)" },
-                    { value: "EGRESO", label: "Egreso (-)" }
-                  ]}
-                  onChange={(val) => setTipoMovimiento(val as "INGRESO" | "EGRESO")}
+                  options={[{ value: "INGRESO", label: "Ingreso (+)" }, { value: "EGRESO", label: "Egreso (-)" }]}
+                  onChange={val => setTipoMovimiento(val as "INGRESO" | "EGRESO")}
                   defaultValue={tipoMovimiento}
                 />
               </div>
-
               <div>
                 <Label>Monto (Bs.)</Label>
                 <Input
@@ -385,223 +213,32 @@ const CajasControl = () => {
                   step={0.10}
                   min="0.10"
                   value={montoMovimiento}
-                  onChange={(e) => setMontoMovimiento(Number(e.target.value))}
+                  onChange={e => setMontoMovimiento(Number(e.target.value))}
                   disabled={!sesionActiva}
                 />
               </div>
-
               <div>
                 <Label>Motivo / Justificación</Label>
                 <Input
                   type="text"
                   placeholder="Ej: Pago de material de limpieza"
                   value={motivoMovimiento}
-                  onChange={(e) => setMotivoMovimiento(e.target.value)}
+                  onChange={e => setMotivoMovimiento(e.target.value)}
                   disabled={!sesionActiva}
                 />
               </div>
-
               <Button
                 variant="primary"
-                className={`w-full text-white ${
-                  tipoMovimiento === "INGRESO" ? "bg-green-600 hover:bg-green-700" : "bg-orange-600 hover:bg-orange-700"
-                } ${!sesionActiva ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`w-full text-white ${tipoMovimiento === "INGRESO" ? "bg-green-600 hover:bg-green-700" : "bg-orange-600 hover:bg-orange-700"} ${!sesionActiva ? "opacity-50 cursor-not-allowed" : ""}`}
                 onClick={handleMovimiento}
                 disabled={!sesionActiva}
               >
                 Registrar {tipoMovimiento}
               </Button>
-              
               {!sesionActiva && (
                 <p className="text-xs text-red-500 text-center mt-2">Debe abrir sesión para registrar movimientos.</p>
               )}
             </div>
-          </ComponentCard>
-        </div>
-
-        {/* Panel 3: Gestión de Recargas (Solo Activo con Sesión Abierta) */}
-        <div className="space-y-6">
-          <ComponentCard title="Líneas y Operaciones de Recargas">
-            {/* Saldos Actuales - Dashboard Premium */}
-            <div className="mb-6">
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Liquidez Actual en Líneas</h4>
-              <div className="grid grid-cols-1 gap-3">
-                {proveedores.map(p => {
-                  const saldo = Number(p.saldo_actual);
-                  let statusColor = "border-green-200 bg-green-50/50 text-green-700 dark:bg-green-950/20 dark:border-green-800 dark:text-green-400";
-                  let statusText = "Disponible";
-                  if (saldo < 50) {
-                    statusColor = "border-red-200 bg-red-50/50 text-red-700 dark:bg-red-950/20 dark:border-red-800 dark:text-red-400 animate-pulse";
-                    statusText = "Crítico - Inyectar";
-                  } else if (saldo < 100) {
-                    statusColor = "border-amber-200 bg-amber-50/50 text-amber-700 dark:bg-amber-950/20 dark:border-amber-800 dark:text-amber-400";
-                    statusText = "Liquidez Baja";
-                  }
-
-                  // Brand Colors for UI accents
-                  let brandBorder = "border-l-4 border-l-blue-600";
-                  if (p.nombre.toLowerCase() === "viva") brandBorder = "border-l-4 border-l-green-500";
-                  if (p.nombre.toLowerCase() === "tigo") brandBorder = "border-l-4 border-l-blue-900";
-                  if (p.nombre.toLowerCase() === "entel") brandBorder = "border-l-4 border-l-orange-500";
-
-                  return (
-                    <div key={p.id} className={`flex justify-between items-center p-3 border border-gray-200 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-800/40 rounded-xl ${brandBorder}`}>
-                      <div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 block font-bold uppercase tracking-wider">{p.nombre}</span>
-                        <span className={`inline-block text-[10px] px-2 py-0.5 mt-1 rounded-full border font-semibold ${statusColor}`}>
-                          {statusText}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-lg font-extrabold text-gray-900 dark:text-white block">Bs. {saldo.toFixed(2)}</span>
-                        <span className="text-[10px] text-gray-500">Comisión: {p.comision_porcentaje}%</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-4">
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Registrar Operación</h4>
-              
-              <div>
-                <Label>Tipo de Transacción</Label>
-                <Select
-                  options={[
-                    { value: "VENTA_RECARGA", label: "Vender Recarga a Cliente" },
-                    { value: "COMPRA_SALDO", label: "Inyectar Capital / Cargar Línea (Desde Caja)" }
-                  ]}
-                  onChange={(val) => {
-                    setTipoOpRecarga(val as "VENTA_RECARGA" | "COMPRA_SALDO");
-                    setMontoRecarga(0);
-                  }}
-                  defaultValue={tipoOpRecarga}
-                  disabled={!sesionActiva}
-                />
-              </div>
-
-              <div>
-                <Label>Operador Telefónico Destino</Label>
-                <Select
-                  options={proveedores.map(p => ({ value: String(p.id), label: p.nombre }))}
-                  onChange={(val) => setIdProveedorSeleccionado(Number(val))}
-                  defaultValue={String(idProveedorSeleccionado)}
-                  disabled={!sesionActiva}
-                />
-              </div>
-
-              <div>
-                <Label>Monto (Bs.)</Label>
-                <div className="space-y-2">
-                  <Input
-                    type="number"
-                    step={1}
-                    min="1"
-                    value={montoRecarga || ""}
-                    onChange={(e) => setMontoRecarga(Number(e.target.value))}
-                    disabled={!sesionActiva}
-                    placeholder="Ingrese monto a transferir/recargar"
-                  />
-                  {/* Montos rápidos para agilizar la operación en el punto de venta */}
-                  {sesionActiva && (
-                    <div className="flex gap-2">
-                      {[10, 20, 50, 100].map(amount => (
-                        <button
-                          key={amount}
-                          type="button"
-                          onClick={() => setMontoRecarga(amount)}
-                          className="flex-1 py-1 px-2 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 transition"
-                        >
-                          Bs. {amount}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Validación dinámica en caliente */}
-              {tipoOpRecarga === "VENTA_RECARGA" && (
-                (() => {
-                  const prov = proveedores.find(p => p.id === idProveedorSeleccionado);
-                  if (prov && montoRecarga > Number(prov.saldo_actual)) {
-                    return (
-                      <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-lg text-xs text-red-600 dark:text-red-400 font-semibold">
-                        ⚠️ Saldo insuficiente en la línea de {prov.nombre}. Disponible: Bs. {Number(prov.saldo_actual).toFixed(2)}
-                      </div>
-                    );
-                  }
-                  return null;
-                })()
-              )}
-
-              {tipoOpRecarga === "VENTA_RECARGA" ? (
-                <div>
-                  <Label>Número Telefónico (Cliente)</Label>
-                  <Input
-                    type="text"
-                    value={numeroTelefono}
-                    onChange={(e) => setNumeroTelefono(e.target.value)}
-                    disabled={!sesionActiva}
-                    placeholder="Ej. 70712345"
-                  />
-                </div>
-              ) : (
-                <div>
-                  <Label>Nro. Referencia de Operación / Justificación</Label>
-                  <Input
-                    type="text"
-                    value={nroReferencia}
-                    onChange={(e) => setNroReferencia(e.target.value)}
-                    disabled={!sesionActiva}
-                    placeholder="Ej. DEP-55443 o Ajuste Interno"
-                  />
-                  <p className="text-[10px] text-gray-500 mt-1">
-                    Esta inyección restará liquidez de la caja física y la transferirá a la línea seleccionada.
-                  </p>
-                </div>
-              )}
-
-              <Button
-                variant="primary"
-                className={`w-full text-white ${
-                  tipoOpRecarga === "VENTA_RECARGA"
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-emerald-600 hover:bg-emerald-700"
-                } ${
-                  !sesionActiva || (tipoOpRecarga === "VENTA_RECARGA" && (() => {
-                    const prov = proveedores.find(p => p.id === idProveedorSeleccionado);
-                    return prov && montoRecarga > Number(prov.saldo_actual);
-                  })()) ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-                onClick={handleRegistrarRecarga}
-                disabled={
-                  !sesionActiva ||
-                  (tipoOpRecarga === "VENTA_RECARGA" && (() => {
-                    const prov = proveedores.find(p => p.id === idProveedorSeleccionado);
-                    return prov && montoRecarga > Number(prov.saldo_actual);
-                  })())
-                }
-              >
-                {tipoOpRecarga === "VENTA_RECARGA" ? "Confirmar Venta de Recarga" : "Confirmar Inyección de Fondos"}
-              </Button>
-            </div>
-
-            {/* Resumen Sesión Acumulado */}
-            {sesionActiva && resumenRecargas && (
-              <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4 bg-gray-50 dark:bg-gray-800/30 p-3 rounded-lg">
-                <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2 text-center">Acumulado Recargas (Sesión)</h4>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-gray-500">Total Ventas (Ingreso):</span>
-                  <span className="font-semibold text-green-600">Bs. {resumenRecargas.total_ventas || 0}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">Total Inyecciones (Egreso Caja):</span>
-                  <span className="font-semibold text-red-500">Bs. {resumenRecargas.total_compras || 0}</span>
-                </div>
-              </div>
-            )}
           </ComponentCard>
         </div>
       </div>

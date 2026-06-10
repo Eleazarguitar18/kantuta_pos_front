@@ -56,6 +56,11 @@ export const CajasService = {
       headers: getHeaders(),
     });
   },
+  async getSesionBalance(id_sesion: number) {
+    return await axios.get(`${API_BASE_URL}/cajas/sesion/${id_sesion}/balance`, {
+      headers: getHeaders(),
+    });
+  },
   async registrarMovimiento(data: CrearMovimientoRequest) {
     data.id_user_create = getUserId();
     return await axios.post(`${API_BASE_URL}/cajas/movimiento`, data, { headers: getHeaders() });
