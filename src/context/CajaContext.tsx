@@ -36,7 +36,11 @@ export const CajaProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         localStorage.removeItem("sesion_caja");
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        setSesionActiva(null);
+        localStorage.removeItem("sesion_caja");
+      }
       // Keep local storage if request fails to be offline-resilient or fallback
     } finally {
       setLoading(false);

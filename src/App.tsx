@@ -35,9 +35,12 @@ import CajasEdit from "./modules/Cajas/components/CajasEdit";
 import CajasControl from "./modules/Cajas/components/CajasControl";
 import VentasMain from "./modules/Ventas/components/VentasMain";
 import PuntoDeVenta from "./modules/Ventas/components/PuntoDeVenta";
-import RecargasMain from "./modules/Ventas/components/RecargasMain";
 import UsuariosMain from "./modules/Administracion/Usuarios/components/UsuariosMain";
 import UsuariosRegister from "./modules/Administracion/Usuarios/components/UsuariosRegister";
+import RecargasOperacion from "./modules/Recargas/pages/RecargasOperacion";
+import RecargasHistorialClientes from "./modules/Recargas/pages/RecargasHistorialClientes";
+import RecargasHistorialInyecciones from "./modules/Recargas/pages/RecargasHistorialInyecciones";
+import { Toaster } from "react-hot-toast";
 
 export default function App() {
   return (
@@ -46,6 +49,7 @@ export default function App() {
         <CajaProvider>
           <Router>
           <ScrollToTop />
+          <Toaster />
           <Routes>
             <Route path="/" element={<ProtectedRoute />}>
               {/* Dashboard Layout */}
@@ -81,7 +85,13 @@ export default function App() {
                 <Route path="/ventas">
                   <Route index element={<VentasMain />} />
                   <Route path="pos" element={<PuntoDeVenta />} />
-                  <Route path="recargas" element={<RecargasMain />} />
+                </Route>
+
+                {/* Recargas */}
+                <Route path="/recargas">
+                  <Route path="operacion" element={<RecargasOperacion />} />
+                  <Route path="historial-clientes" element={<RecargasHistorialClientes />} />
+                  <Route path="historial-inyecciones" element={<RecargasHistorialInyecciones />} />
                 </Route>
 
                 {/* Usuarios (Administracion) */}

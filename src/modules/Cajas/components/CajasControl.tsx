@@ -45,9 +45,17 @@ const CajasControl = () => {
       const activa = data.sesiones?.find(s => s.estado_sesion === "ABIERTA");
       setSesionActiva(activa || null);
       if (activa) {
-        const balanceRes = await CajasService.getSesionBalance(activa.id);
-        if (balanceRes && balanceRes.data) {
-          setMontoFinalReal(Number(balanceRes.data.monto_final_teorico));
+        try {
+          const balanceRes = await CajasService.getSesionBalance(activa.id);
+          if (balanceRes && balanceRes.data) {
+            setMontoFinalReal(Number(balanceRes.data.monto_final_teorico));
+          }
+        } catch (error: any) {
+          if (error.response?.status === 404) {
+            setSesionActiva(null);
+          } else {
+            console.error("Error al cargar balance de la sesión", error);
+          }
         }
       }
     } catch (error) {
