@@ -35,7 +35,7 @@ const ProductosMain = () => {
     fetchProducts();
 
     // Conectamos al servidor (usando tu URL de backend)
-    const socket = io(import.meta.env.VITE_API_URL || "http://localhost:3000");
+    const socket = io(import.meta.env.VITE_API_BASE_URL || "http://localhost:3000");
 
     // Escuchamos un evento personalizado (ej: 'productos_cambiados')
     socket.on("productos_cambiados", () => {
@@ -265,11 +265,10 @@ const ProductosMain = () => {
                   Stock Actual
                 </p>
                 <p
-                  className={`text-sm font-semibold ${
-                    selectedProduct.stock_actual <= selectedProduct.stock_minimo
+                  className={`text-sm font-semibold ${selectedProduct.stock_actual <= selectedProduct.stock_minimo
                       ? "text-red-600 dark:text-red-400"
                       : "text-gray-800 dark:text-white"
-                  }`}
+                    }`}
                 >
                   {selectedProduct.stock_actual} unidades
                   {selectedProduct.stock_actual <=
