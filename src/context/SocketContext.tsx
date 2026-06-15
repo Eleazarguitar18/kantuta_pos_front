@@ -1,8 +1,9 @@
 import { createContext, ReactNode } from "react";
 import { io } from "socket.io-client";
+import { API_BASE_URL } from "../components/auth/services/urlBase";
 
 
-const socket = io(import.meta.env.VITE_API_BASE_URL || "http://localhost:3000");
+const socket = io(API_BASE_URL);
 
 export const SocketContext = createContext(socket);
 
