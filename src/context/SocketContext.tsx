@@ -1,7 +1,8 @@
 import { createContext, ReactNode } from "react";
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:3000"); // URL de tu NestJS
+
+const socket = io(import.meta.env.VITE_API_URL || "http://localhost:3000");
 
 export const SocketContext = createContext(socket);
 
