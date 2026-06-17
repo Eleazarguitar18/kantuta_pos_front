@@ -8,6 +8,7 @@ import ButtonEdit from "../../../../components/ui/button/ButtonEdit";
 import ButtonSmallAction from "../../../../components/ui/button/ButtonSmallAction";
 import Button from "../../../../components/ui/button/Button";
 import { SocketContext } from "../../../../context/SocketContext";
+import { useAuth } from "../../../../context/auth/AuthContext";
 interface Categoria {
   id: number;
   nombre: string;
@@ -18,6 +19,16 @@ const CategoriasMain = () => {
   const socket = useContext(SocketContext);
   const [data, setData] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+  let roleName = "";
+  if (user?.role) {
+    if (typeof user.role === "object" && "name" in user.role) {
+      roleName = user.role.name;
+    } else if (typeof user.role === "string") {
+      roleName = user.role;
+    }
+  }
 
   // 1. Extraemos la lógica de carga a una función estable
   const fetchCategories = useCallback(async () => {
@@ -97,6 +108,10 @@ const CategoriasMain = () => {
     },
   ];
 
+  const finalColumns = roleName === "Operador" 
+    ? columns.filter(col => col.name !== "Acciones") 
+    : columns;
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -107,20 +122,22 @@ const CategoriasMain = () => {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => navigate("registrar")}
-            startIcon={<PencilIcon className="w-4 h-4" color={"white"} />}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            Agregar Categoria
-          </Button>
+          {roleName !== 'Operador' && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => navigate("registrar")}
+              startIcon={<PencilIcon className="w-4 h-4" color={"white"} />}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              Agregar Categoria
+            </Button>
+          )}
         </div>
       </div>
       <ComponentCard title="Lista de Categorias">
         <DataTable
-          columns={columns}
+          columns={finalColumns}
           data={data}
           pagination
           progressPending={loading}

@@ -12,6 +12,8 @@ import { Modal } from "../../../../components/ui/modal";
 import { useModal } from "../../../../hooks/useModal";
 import { io } from "socket.io-client";
 import { API_BASE_URL } from "../../../../components/auth/services/urlBase";
+import { useAuth } from "../../../../context/auth/AuthContext";
+import axios from "axios";
 
 const ProductosMain = () => {
   const [data, setData] = useState<Producto[]>([]);
@@ -19,6 +21,16 @@ const ProductosMain = () => {
   const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null);
   const { isOpen, openModal, closeModal } = useModal();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  let roleName = "";
+  if (user?.role) {
+    if (typeof user.role === "object" && "name" in user.role) {
+      roleName = user.role.name;
+    } else if (typeof user.role === "string") {
+      roleName = user.role;
+    }
+  }
 
   const fetchProducts = async () => {
     try {
@@ -77,6 +89,32 @@ const ProductosMain = () => {
     }
   };
 
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const handleDownloadReport = async () => {
+    try {
+      setDownloadingPdf(true);
+      const auditor = user?.name || "Auditor Autorizado";
+      const response = await axios.get(`${API_BASE_URL}/reportes/pdf/inventario?auditor=${encodeURIComponent(auditor)}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
+        responseType: "blob",
+      });
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.setAttribute("download", `Inventario-${new Date().toISOString().split("T")[0]}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      alert("Error al descargar el PDF del inventario");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return "-";
     return new Date(dateString).toLocaleDateString("es-BO", {
@@ -109,6 +147,27 @@ const ProductosMain = () => {
     {
       name: "Stock Actual",
       selector: (row: Producto) => row.stock_actual,
+      cell: (row: Producto) => {
+        const threshold = row.stock_minimo || 10;
+        const ratio = row.stock_actual / threshold;
+        
+        let colorClass = "text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/40 border-green-200 dark:border-green-900";
+        let indicator = "🟢";
+        if (ratio < 0.25) {
+          colorClass = "text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900 font-bold";
+          indicator = "🔴";
+        } else if (ratio <= 0.50) {
+          colorClass = "text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/40 border-yellow-200 dark:border-yellow-900";
+          indicator = "🟡";
+        }
+
+        return (
+          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs ${colorClass}`}>
+            <span>{indicator}</span>
+            <span>{row.stock_actual} / {threshold}</span>
+          </div>
+        );
+      },
       sortable: true,
     },
     {
@@ -129,24 +188,55 @@ const ProductosMain = () => {
           >
             Ver
           </ButtonSmallAction>
-          <ButtonEdit
-            className=""
-            variant="primary"
-            size="sm"
-            onClick={() => editProducto(row)}
-            startIcon={<PencilIcon className="w-4 h-4" color={"white"} />}
-          >
-            Editar
-          </ButtonEdit>
           <ButtonSmallAction
-            className="bg-red-500 hover:bg-red-600 text-white"
+            className="bg-purple-600 hover:bg-purple-700 text-white"
             variant="primary"
             size="sm"
-            onClick={() => deleteProducto(row)}
-            startIcon={<TrashBinIcon className="w-4 h-4" color={"white"} />}
+            onClick={async () => {
+              try {
+                const response = await axios.get(`${API_BASE_URL}/reportes/pdf/producto/${row.id}`, {
+                  headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
+                  responseType: "blob",
+                });
+                const blob = new Blob([response.data], { type: "application/pdf" });
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = downloadUrl;
+                link.setAttribute("download", `ficha-producto-${row.id}.pdf`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.URL.revokeObjectURL(downloadUrl);
+              } catch (err) {
+                alert("Error al descargar la ficha en PDF.");
+              }
+            }}
+            startIcon={<span className="font-bold">📄</span>}
           >
-            Eliminar
+            PDF
           </ButtonSmallAction>
+          {roleName !== 'Operador' && (
+            <>
+              <ButtonEdit
+                className=""
+                variant="primary"
+                size="sm"
+                onClick={() => editProducto(row)}
+                startIcon={<PencilIcon className="w-4 h-4" color={"white"} />}
+              >
+                Editar
+              </ButtonEdit>
+              <ButtonSmallAction
+                className="bg-red-500 hover:bg-red-600 text-white"
+                variant="primary"
+                size="sm"
+                onClick={() => deleteProducto(row)}
+                startIcon={<TrashBinIcon className="w-4 h-4" color={"white"} />}
+              >
+                Eliminar
+              </ButtonSmallAction>
+            </>
+          )}
         </div>
       ),
       ignoreRowClick: true,
@@ -166,15 +256,28 @@ const ProductosMain = () => {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => navigate("registrar")}
-            startIcon={<PencilIcon className="w-4 h-4" color={"white"} />}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            Agregar Producto
-          </Button>
+          {roleName !== 'Operador' && (
+            <>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleDownloadReport}
+                disabled={downloadingPdf}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                {downloadingPdf ? "Generando..." : "📄 Descargar PDF"}
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => navigate("registrar")}
+                startIcon={<PencilIcon className="w-4 h-4" color={"white"} />}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                Agregar Producto
+              </Button>
+            </>
+          )}
         </div>
       </div>
       <ComponentCard title="Lista de Productos">
@@ -310,18 +413,20 @@ const ProductosMain = () => {
 
             {/* Botones del modal */}
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <Button
-                variant="primary"
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => {
-                  closeModal();
-                  editProducto(selectedProduct);
-                }}
-                startIcon={<PencilIcon className="w-4 h-4" color={"white"} />}
-              >
-                Editar
-              </Button>
+              {roleName !== 'Operador' && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => {
+                    closeModal();
+                    editProducto(selectedProduct);
+                  }}
+                  startIcon={<PencilIcon className="w-4 h-4" color={"white"} />}
+                >
+                  Editar
+                </Button>
+              )}
               <Button
                 variant="primary"
                 size="sm"

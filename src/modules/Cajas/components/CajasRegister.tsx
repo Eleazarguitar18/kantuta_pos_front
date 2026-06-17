@@ -8,10 +8,22 @@ import Select from "../../../components/form/Select";
 import { CajasService } from "../services/cajasService";
 import Alert from "../../../components/ui/alert/Alert";
 import { CrearCajaRequest } from "../interfaces/CajaDTO";
+import { useAuth } from "../../../context/auth/AuthContext";
 
 const CajasRegister = () => {
   const [nombre, setNombre] = useState("");
   const [especialidad, setEspecialidad] = useState<"SOLO_VENTAS" | "SOLO_AGENTES" | "MIXTA">("MIXTA");
+  const [montoCreacion, setMontoCreacion] = useState<number>(0);
+  const { user } = useAuth();
+
+  let roleName = "";
+  if (user?.role) {
+    if (typeof user.role === "object" && "name" in user.role) {
+      roleName = user.role.name;
+    } else if (typeof user.role === "string") {
+      roleName = user.role;
+    }
+  }
 
   const [showAlert, setShowAlert] = useState(false);
   const [showError, setShowError] = useState(false);
@@ -34,14 +46,17 @@ const CajasRegister = () => {
       const payload: CrearCajaRequest = {
         nombre,
         especialidad,
+        monto_creacion: Number(montoCreacion)
       };
 
       const response = await CajasService.createCaja(payload);
       if (response.status === 201 || response.status === 200) {
         setShowAlert(true);
-        setTimeout(() => {
-          navigate("/cajas");
-        }, 2000);
+        // Clear form to stay on the same view and add more
+        setNombre("");
+        setMontoCreacion(0);
+        setEspecialidad("MIXTA");
+        setTimeout(() => setShowAlert(false), 3000);
       }
     } catch (error: any) {
       setShowError(true);
@@ -98,6 +113,22 @@ const CajasRegister = () => {
               defaultValue={especialidad}
             />
           </div>
+
+          {roleName !== 'Operador' && (
+            <div>
+              <Label htmlFor="monto_creacion">Monto de Creación / Saldo Inicial Base (Bs.)</Label>
+              <Input
+                type="number"
+                id="monto_creacion"
+                placeholder="Ej: 500.00"
+                step={0.10}
+                min={0}
+                value={montoCreacion.toString()}
+                onChange={(e: any) => setMontoCreacion(Number(e.target.value))}
+              />
+              <p className="text-xs text-gray-500 mt-1">Este será el dinero físico con el que la caja operará en su primer turno.</p>
+            </div>
+          )}
         </div>
 
         <div className="mt-8 flex justify-end">

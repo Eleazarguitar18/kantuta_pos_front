@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
+import { useAuth } from "../context/auth/AuthContext";
 
 // Assume these icons are imported from an icon library
 import {
@@ -70,6 +71,20 @@ const navItems: NavItem[] = [
     ],
   },
   {
+    icon: <PlugInIcon />,
+    name: "WhatsApp API",
+    subItems: [
+      { name: "Conectar WhatsApp", path: "/whatsapp", pro: false },
+    ],
+  },
+  {
+    icon: <PageIcon />,
+    name: "Reportes",
+    subItems: [
+      { name: "Reportes Generales", path: "/reportes", pro: false },
+    ],
+  },
+  {
     icon: <UserCircleIcon />,
     name: "Administración",
     subItems: [
@@ -83,6 +98,25 @@ const othersItems: NavItem[] = [];
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
+  const { user } = useAuth();
+
+  let roleName = "";
+  if (user?.role) {
+    if (typeof user.role === "object" && "name" in user.role) {
+      roleName = user.role.name;
+    } else if (typeof user.role === "string") {
+      roleName = user.role;
+    }
+  }
+
+  const filteredNavItems = navItems.filter((item) => {
+    if (roleName === "Operador") {
+      if (item.name === "Administración" || item.name === "Reportes") {
+        return false;
+      }
+    }
+    return true;
+  });
 
   const [openSubmenu, setOpenSubmenu] = useState<{
     type: "main" | "others";
@@ -102,7 +136,7 @@ const AppSidebar: React.FC = () => {
   useEffect(() => {
     let submenuMatched = false;
     ["main", "others"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : othersItems;
+      const items = menuType === "main" ? filteredNavItems : othersItems;
       items.forEach((nav, index) => {
         if (nav.subItems) {
           nav.subItems.forEach((subItem) => {
@@ -304,7 +338,7 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots className="size-6" />
                 )}
               </h2>
-              {renderMenuItems(navItems, "main")}
+              {renderMenuItems(filteredNavItems, "main")}
             </div>
             <div className="">
               <h2

@@ -6,12 +6,18 @@ export interface UserPersona {
   genero: string;
 }
 
+export interface UserRole {
+  id: number;
+  name: string;
+  description?: string;
+}
+
 export interface User {
   id: number;
   name: string;
   email: string;
   estado: boolean;
-  role: string | null;
+  role: UserRole | string | null;
   persona: UserPersona;
 }
 

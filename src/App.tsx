@@ -40,6 +40,13 @@ import UsuariosRegister from "./modules/Administracion/Usuarios/components/Usuar
 import RecargasOperacion from "./modules/Recargas/pages/RecargasOperacion";
 import RecargasHistorialClientes from "./modules/Recargas/pages/RecargasHistorialClientes";
 import RecargasHistorialInyecciones from "./modules/Recargas/pages/RecargasHistorialInyecciones";
+import ReportesMain from "./modules/Reportes/components/ReportesMain";
+import ReporteCajaSelector from "./modules/Reportes/components/ReporteCajaSelector";
+import ReporteVentasRango from "./modules/Reportes/components/ReporteVentasRango";
+import ReporteComprasRango from "./modules/Reportes/components/ReporteComprasRango";
+import ReporteInventario from "./modules/Reportes/components/ReporteInventario";
+import ReporteProductividad from "./modules/Reportes/components/ReporteProductividad";
+import WhatsAppMain from "./modules/Agentes/pages/WhatsAppMain";
 import { Toaster } from "react-hot-toast";
 
 export default function App() {
@@ -59,13 +66,17 @@ export default function App() {
                 <Route path="/inventario">
                   <Route path="productos">
                     <Route index element={<ProductosMain />} />
-                    <Route path="registrar" element={<ProductosRegister />} />
-                    <Route path="editar/:id_producto" element={<ProductosEdit />} />
+                    <Route element={<ProtectedRoute allowedRoles={['Administrador', 'Jefe de Tienda']} />}>
+                      <Route path="registrar" element={<ProductosRegister />} />
+                      <Route path="editar/:id_producto" element={<ProductosEdit />} />
+                    </Route>
                   </Route>
                   <Route path="categorias">
                     <Route index element={<CategoriasMain />} />
-                    <Route path="registrar" element={<CategoriasRegister />} />
-                    <Route path="editar/:id_categoria" element={<CategoriasEdit />} />
+                    <Route element={<ProtectedRoute allowedRoles={['Administrador', 'Jefe de Tienda']} />}>
+                      <Route path="registrar" element={<CategoriasRegister />} />
+                      <Route path="editar/:id_categoria" element={<CategoriasEdit />} />
+                    </Route>
                   </Route>
                   <Route path="compras">
                     <Route index element={<ComprasMain />} />
@@ -76,9 +87,11 @@ export default function App() {
                 {/* Cajas */}
                 <Route path="/cajas">
                   <Route index element={<CajasMain />} />
-                  <Route path="registrar" element={<CajasRegister />} />
-                  <Route path="editar/:id" element={<CajasEdit />} />
                   <Route path="control/:id" element={<CajasControl />} />
+                  <Route element={<ProtectedRoute allowedRoles={['Administrador', 'Jefe de Tienda']} />}>
+                    <Route path="registrar" element={<CajasRegister />} />
+                    <Route path="editar/:id" element={<CajasEdit />} />
+                  </Route>
                 </Route>
 
                 {/* Ventas */}
@@ -94,9 +107,24 @@ export default function App() {
                   <Route path="historial-inyecciones" element={<RecargasHistorialInyecciones />} />
                 </Route>
 
+                {/* WhatsApp */}
+                <Route path="/whatsapp">
+                  <Route index element={<WhatsAppMain />} />
+                </Route>
+
+                {/* Reportes */}
+                <Route path="/reportes" element={<ProtectedRoute allowedRoles={['Administrador', 'Jefe de Tienda']} />}>
+                  <Route index element={<ReportesMain />} />
+                  <Route path="caja" element={<ReporteCajaSelector />} />
+                  <Route path="ventas" element={<ReporteVentasRango />} />
+                  <Route path="compras" element={<ReporteComprasRango />} />
+                  <Route path="inventario" element={<ReporteInventario />} />
+                  <Route path="productividad" element={<ReporteProductividad />} />
+                </Route>
+
                 {/* Usuarios (Administracion) */}
                 <Route path="/administracion">
-                  <Route path="usuarios">
+                  <Route path="usuarios" element={<ProtectedRoute allowedRoles={['Administrador', 'Jefe de Tienda']} />}>
                     <Route index element={<UsuariosMain />} />
                     <Route path="registrar" element={<UsuariosRegister />} />
                     <Route path="editar/:id" element={<UserProfiles />} />

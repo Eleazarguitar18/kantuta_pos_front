@@ -10,13 +10,26 @@ import Alert from "../../../components/ui/alert/Alert";
 import { Caja, SesionCaja } from "../interfaces/Caja";
 import ComponentCard from "../../../components/common/ComponentCard";
 import { useCaja } from "../../../context/CajaContext";
+import { useAuth } from "../../../context/auth/AuthContext";
+import { API_BASE_URL } from "../../../components/auth/services/urlBase";
+import axios from "axios";
 
 const CajasControl = () => {
   // Core data
   const [caja, setCaja] = useState<Caja | null>(null);
   const [sesionActiva, setSesionActiva] = useState<SesionCaja | null>(null);
   const { abrirCaja, cerrarCaja } = useCaja();
+  const { user } = useAuth();
 
+  let roleName = "";
+  if (user?.role) {
+    if (typeof user.role === "object" && "name" in user.role) {
+      roleName = user.role.name;
+    } else if (typeof user.role === "string") {
+      roleName = user.role;
+    }
+  }
+  
   // Form state – apertura
   const [montoInicial, setMontoInicial] = useState<number>(0);
 
@@ -122,6 +135,27 @@ const CajasControl = () => {
     }
   };
 
+  const handleDownloadPDF = async () => {
+    if (!sesionActiva) return;
+    try {
+      const response = await axios.get(`${API_BASE_URL}/reportes/pdf/movimientos-caja/${sesionActiva.id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
+        responseType: "blob",
+      });
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.setAttribute("download", `Caja-Sesion-${sesionActiva.id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      alert("Error al descargar el PDF");
+    }
+  };
+
   if (!caja) return <div className="p-6">Cargando datos de caja...</div>;
 
   return (
@@ -160,6 +194,12 @@ const CajasControl = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-400">ID Sesión: <span className="font-medium text-gray-900 dark:text-gray-100">{sesionActiva.id}</span></p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Apertura: <span className="font-medium text-gray-900 dark:text-gray-100">{new Date(sesionActiva.fecha_apertura).toLocaleString()}</span></p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Monto Inicial: <span className="font-semibold text-gray-900 dark:text-gray-100">Bs. {sesionActiva.monto_inicial}</span></p>
+                  
+                  <div className="mt-4">
+                    <Button variant="primary" className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm py-2 px-4" onClick={handleDownloadPDF}>
+                      📄 Descargar Extracto (PDF)
+                    </Button>
+                  </div>
                 </div>
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                   <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">Cerrar Sesión (Arqueo)</h4>
@@ -184,16 +224,18 @@ const CajasControl = () => {
                 </div>
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                   <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">Abrir Nueva Sesión</h4>
-                  <div className="mb-3">
-                    <Label>Monto Inicial (Bs.)</Label>
-                    <Input
-                      type="number"
-                      step={0.10}
-                      min="0"
-                      value={montoInicial}
-                      onChange={e => setMontoInicial(Number(e.target.value))}
-                    />
-                  </div>
+                  {roleName !== "Operador" && (
+                    <div className="mb-3">
+                      <Label>Monto Inicial (Bs.)</Label>
+                      <Input
+                        type="number"
+                        step={0.10}
+                        min="0"
+                        value={montoInicial}
+                        onChange={e => setMontoInicial(Number(e.target.value))}
+                      />
+                    </div>
+                  )}
                   <Button variant="primary" className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={handleAbrirSesion}>Abrir Caja</Button>
                 </div>
               </div>

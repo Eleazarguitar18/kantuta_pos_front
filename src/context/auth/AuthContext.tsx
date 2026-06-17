@@ -1,5 +1,26 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import type { User } from "../../modules/Administracion/Usuarios/types/auth.type";
+
+const isTokenExpired = (token: string | null) => {
+  if (!token) return true;
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    const payload = JSON.parse(jsonPayload);
+    if (payload.exp && payload.exp * 1000 < Date.now()) {
+      return true;
+    }
+    return false;
+  } catch (e) {
+    return true;
+  }
+};
 
 interface AuthContextType {
   user: User | null;
@@ -22,7 +43,14 @@ export function AuthContextProvider({
     return storedUser ? JSON.parse(storedUser) : null;
   });
   const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem("access_token");
+    const tk = localStorage.getItem("access_token");
+    if (tk && isTokenExpired(tk)) {
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("user");
+      return null;
+    }
+    return tk;
   });
 
   const loginStorage = (
@@ -42,7 +70,40 @@ export function AuthContextProvider({
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
+    window.location.href = "/signin";
   };
+
+  useEffect(() => {
+    const currentToken = localStorage.getItem("access_token");
+    if (currentToken && isTokenExpired(currentToken)) {
+      logoutStorage();
+    }
+  }, []);
+
+  const timeoutRef = useRef<number | ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const resetTimer = () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current as any);
+      timeoutRef.current = setTimeout(() => {
+        logoutStorage();
+      }, 45 * 60 * 1000); // 45 minutos
+    };
+
+    resetTimer();
+
+    const events = ["mousemove", "keydown", "scroll", "click"];
+    const handleActivity = () => {
+       resetTimer();
+    };
+
+    events.forEach(evt => window.addEventListener(evt, handleActivity));
+
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current as any);
+      events.forEach(evt => window.removeEventListener(evt, handleActivity));
+    };
+  }, []);
 
   return (
     <AuthContext.Provider

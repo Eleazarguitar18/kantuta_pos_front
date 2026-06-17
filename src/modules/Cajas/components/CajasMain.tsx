@@ -8,11 +8,24 @@ import ButtonSmallAction from "../../../components/ui/button/ButtonSmallAction";
 import Button from "../../../components/ui/button/Button";
 import { Caja } from "../interfaces/Caja";
 import ButtonEdit from "../../../components/ui/button/ButtonEdit";
+import { useAuth } from "../../../context/auth/AuthContext";
+import axios from "axios";
+import { API_BASE_URL } from "../../../components/auth/services/urlBase";
 
 const CajasMain = () => {
   const [data, setData] = useState<Caja[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  let roleName = "";
+  if (user?.role) {
+    if (typeof user.role === "object" && "name" in user.role) {
+      roleName = user.role.name;
+    } else if (typeof user.role === "string") {
+      roleName = user.role;
+    }
+  }
 
   const fetchCajas = async () => {
     try {
@@ -94,23 +107,54 @@ const CajasMain = () => {
           >
             Control (Sesiones)
           </ButtonSmallAction>
-          <ButtonEdit
-            variant="primary"
-            size="sm"
-            onClick={() => editCaja(row)}
-            startIcon={<PencilIcon className="w-4 h-4" color={"white"} />}
-          >
-            Editar
-          </ButtonEdit>
           <ButtonSmallAction
-            className="bg-red-500 hover:bg-red-600 text-white"
+            className="bg-purple-600 hover:bg-purple-700 text-white"
             variant="primary"
             size="sm"
-            onClick={() => deleteCaja(row)}
-            startIcon={<TrashBinIcon className="w-4 h-4" color={"white"} />}
+            onClick={async () => {
+              try {
+                const response = await axios.get(`${API_BASE_URL}/reportes/pdf/caja-historial/${row.id}`, {
+                  headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
+                  responseType: "blob",
+                });
+                const blob = new Blob([response.data], { type: "application/pdf" });
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = downloadUrl;
+                link.setAttribute("download", `extracto-caja-${row.id}.pdf`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.URL.revokeObjectURL(downloadUrl);
+              } catch (err) {
+                alert("Error al descargar el extracto histórico de la caja.");
+              }
+            }}
+            startIcon={<span className="font-bold">📄</span>}
           >
-            Eliminar
+            PDF Historial
           </ButtonSmallAction>
+          {roleName !== 'Operador' && (
+            <>
+              <ButtonEdit
+                variant="primary"
+                size="sm"
+                onClick={() => editCaja(row)}
+                startIcon={<PencilIcon className="w-4 h-4" color={"white"} />}
+              >
+                Editar
+              </ButtonEdit>
+              <ButtonSmallAction
+                className="bg-red-500 hover:bg-red-600 text-white"
+                variant="primary"
+                size="sm"
+                onClick={() => deleteCaja(row)}
+                startIcon={<TrashBinIcon className="w-4 h-4" color={"white"} />}
+              >
+                Eliminar
+              </ButtonSmallAction>
+            </>
+          )}
         </div>
       ),
       ignoreRowClick: true,
@@ -130,15 +174,27 @@ const CajasMain = () => {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => navigate("registrar")}
-            startIcon={<PlusIcon className="w-4 h-4" color={"white"} />}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            Nueva Caja
-          </Button>
+          {roleName !== 'Operador' && (
+            <>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => navigate("/reportes/caja")}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                📄 Reportes (PDF)
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => navigate("registrar")}
+                startIcon={<PlusIcon className="w-4 h-4" color={"white"} />}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                Nueva Caja
+              </Button>
+            </>
+          )}
         </div>
       </div>
       <ComponentCard title="Lista de Cajas">
