@@ -14,6 +14,7 @@ import ReportesModal from "../../../components/common/ReportesModal";
 import { useAuth } from "../../../context/auth/AuthContext";
 import { API_BASE_URL } from "../../../components/auth/services/urlBase";
 import axios from "axios";
+import { ModalReporteVentas } from "./ModalReporteVentas";
 
 const VentasMain = () => {
   const [data, setData] = useState<Venta[]>([]);
@@ -141,7 +142,7 @@ const VentasMain = () => {
         if (row.estado_venta === "COMPLETADA") colorClass = "bg-green-100 text-green-800";
         if (row.estado_venta === "ANULADA") colorClass = "bg-red-100 text-red-800";
         if (row.estado_venta === "EDITADA") colorClass = "bg-orange-100 text-orange-800";
-        
+
         return (
           <span className={`px-2 py-1 rounded-full text-xs font-bold ${colorClass}`}>
             {row.estado_venta}
@@ -278,10 +279,9 @@ const VentasMain = () => {
               <h3 className="text-2xl font-bold text-gray-800 dark:text-white">
                 Ticket #{selectedVenta.id}
               </h3>
-              <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                selectedVenta.estado_venta === "COMPLETADA" ? "bg-green-100 text-green-800" :
+              <span className={`px-3 py-1 rounded-full text-sm font-bold ${selectedVenta.estado_venta === "COMPLETADA" ? "bg-green-100 text-green-800" :
                 selectedVenta.estado_venta === "ANULADA" ? "bg-red-100 text-red-800" : "bg-orange-100 text-orange-800"
-              }`}>
+                }`}>
                 {selectedVenta.estado_venta}
               </span>
             </div>
@@ -359,11 +359,9 @@ const VentasMain = () => {
           </div>
         )}
       </Modal>
-
       <ReportesModal
         isOpen={reportModalOpen}
         onClose={() => setReportModalOpen(false)}
-        onGenerate={handleDownloadVentasPdf}
         title="Reporte de Ventas (PDF)"
       />
     </div>

@@ -36,4 +36,15 @@ export const VentasService = {
       headers: getHeaders(),
     });
   },
+  async getReporteResumen(fechaInicio: string, fechaFin: string) {
+    const body = { fechaInicio, fechaFin };
+    const response = await axios.post(
+      `${API_BASE_URL}/ventas/reporte-resumen`,
+      body,
+      {
+        headers: getHeaders(),
+      },
+    );
+    return response.data;
+  },
 };
