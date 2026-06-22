@@ -8,8 +8,8 @@ export interface UserPersona {
 
 export interface UserRole {
   id: number;
-  name: string;
-  description?: string;
+  nombre: string;
+  descripcion?: string;
 }
 
 export interface User {

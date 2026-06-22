@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { BoxIcon, TrashBinIcon} from "../../../icons";
+import { BoxIcon, TrashBinIcon } from "../../../icons";
 import { useCaja } from "../../../context/CajaContext";
 import Button from "../../../components/ui/button/Button";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
@@ -22,7 +22,7 @@ const PuntoDeVenta = () => {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [filteredProductos, setFilteredProductos] = useState<Producto[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   const [cart, setCart] = useState<CartItem[]>([]);
   const [metodoPago, setMetodoPago] = useState<"EFECTIVO" | "QR" | "TRANSFERENCIA">("EFECTIVO");
   const { sesionActiva, loading: loadingCaja } = useCaja();
@@ -67,9 +67,9 @@ const PuntoDeVenta = () => {
         alert("No hay suficiente stock para este producto.");
         return;
       }
-      setCart(cart.map(c => 
-        c.id_producto === producto.id 
-          ? { ...c, cantidad: c.cantidad + 1 } 
+      setCart(cart.map(c =>
+        c.id_producto === producto.id
+          ? { ...c, cantidad: c.cantidad + 1 }
           : c
       ));
     } else {
@@ -93,9 +93,9 @@ const PuntoDeVenta = () => {
       alert("La cantidad excede el stock disponible.");
       return;
     }
-    setCart(cart.map(c => 
-      c.id_producto === id_producto 
-        ? { ...c, cantidad: newQuantity } 
+    setCart(cart.map(c =>
+      c.id_producto === id_producto
+        ? { ...c, cantidad: newQuantity }
         : c
     ));
   };
@@ -119,6 +119,7 @@ const PuntoDeVenta = () => {
       };
 
       const response = await VentasService.createVenta(payload);
+      console.log('response de la venta', response);
       if (response.status === 201 || response.status === 200) {
         setCreatedVenta({
           ...response.data,
@@ -135,10 +136,25 @@ const PuntoDeVenta = () => {
         setTimeout(() => setShowAlert(false), 3000);
         openModal();
       }
-    } catch (error) {
+    } catch (error: any) {
       setShowError(true);
       setTimeout(() => setShowError(false), 5000);
-      console.error("Error al registrar venta", error);
+
+      if (error.response) {
+        const { status, data } = error.response;
+        console.error(`🚨 [Error ${status}] El backend rechazó la venta:`, data);
+
+        // Si tu NestJS manda un mensaje específico (ej: "No hay suficiente stock de Coca-Cola")
+        const apiMessage = data?.message || "Error desconocido en el servidor";
+        console.log("Mensaje real del error:", apiMessage);
+
+      } else if (error.request) {
+        // La petición se hizo pero el backend nunca respondió (servidor caído o problemas de red)
+        console.error("🌐 Error de red: El servidor no respondió a la petición de venta.");
+      } else {
+        // Algo pasó al armar la petición antes de enviarla
+        console.error("⚙️ Error al procesar la venta interna del frontend:", error.message);
+      }
     }
   };
 
@@ -200,7 +216,7 @@ const PuntoDeVenta = () => {
       )}
 
       <div className="flex flex-col lg:flex-row gap-6 flex-1">
-        
+
         {/* Lado Izquierdo: Buscador y Lista de Productos */}
         <div className="lg:w-2/3 flex flex-col space-y-4">
           <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-theme-sm border border-gray-200 dark:border-gray-700">
@@ -221,8 +237,8 @@ const PuntoDeVenta = () => {
           <div className="flex-1 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-theme-sm border border-gray-200 dark:border-gray-700 overflow-y-auto max-h-[70vh]">
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredProductos.map((p) => (
-                <div 
-                  key={p.id} 
+                <div
+                  key={p.id}
                   onClick={() => addToCart(p)}
                   className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-800 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md cursor-pointer transition-all flex flex-col"
                 >
@@ -271,17 +287,17 @@ const PuntoDeVenta = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                      <button 
+                      <button
                         className="px-2 py-1 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                         onClick={() => updateQuantity(item.id_producto, item.cantidad - 1)}
                       >-</button>
-                      <input 
-                        type="number" 
-                        value={item.cantidad} 
+                      <input
+                        type="number"
+                        value={item.cantidad}
                         onChange={(e) => updateQuantity(item.id_producto, parseInt(e.target.value) || 1)}
-                        className="w-10 text-center text-sm border-x border-gray-200 dark:border-gray-700 bg-transparent focus:outline-none" 
+                        className="w-10 text-center text-sm border-x border-gray-200 dark:border-gray-700 bg-transparent focus:outline-none"
                       />
-                      <button 
+                      <button
                         className="px-2 py-1 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                         onClick={() => updateQuantity(item.id_producto, item.cantidad + 1)}
                       >+</button>
@@ -289,7 +305,7 @@ const PuntoDeVenta = () => {
                     <div className="font-bold text-gray-800 dark:text-white w-16 text-right">
                       Bs. {(item.cantidad * item.precio_unitario).toFixed(2)}
                     </div>
-                    <button 
+                    <button
                       onClick={() => removeFromCart(item.id_producto)}
                       className="text-red-400 hover:text-red-600 p-1"
                     >
@@ -331,7 +347,7 @@ const PuntoDeVenta = () => {
                   <span className="font-semibold">Caja Activa:</span> {sesionActiva.caja?.nombre || `Caja #${sesionActiva.id_caja}`} (Sesión #{sesionActiva.id})
                 </p>
               </div>
-              
+
               <Button
                 variant="primary"
                 className="w-full py-4 text-lg font-bold bg-green-600 hover:bg-green-700 shadow-xl hover:shadow-green-500/30 transition-all text-white rounded-xl mt-4"

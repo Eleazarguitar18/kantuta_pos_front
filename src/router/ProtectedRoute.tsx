@@ -11,25 +11,51 @@ export default function ProtectedRoute({ allowedRoles }: { allowedRoles?: string
 
   if (allowedRoles && user) {
     let roleName = "";
-    if (user.role) {
-      if (typeof user.role === "object" && "name" in user.role) {
-        roleName = user.role.name;
-      } else if (typeof user.role === "string") {
-        roleName = user.role;
+
+    // 1. Buscamos el rol de forma ultra-segura barriendo todas las variantes posibles del objeto user
+    const userRaw = user as any;
+
+    // Evaluamos si viene en "user.role" o "user.Role"
+    const roleObject = userRaw.role || userRaw.Role;
+
+    if (roleObject) {
+      if (typeof roleObject === "object") {
+        // Tu interfaz real usa "nombre" en minúsculas, por si acaso revisamos "name" también
+        roleName = roleObject.nombre || roleObject.name || "";
+      } else if (typeof roleObject === "string") {
+        roleName = roleObject;
       }
     }
-    
-    // Fallback if roleName is on custom property
-    if (!roleName && (user as any).roleName) {
-      roleName = (user as any).roleName;
+
+    // Fallback extra por si el backend mandó la propiedad "roleName" suelta
+    if (!roleName && userRaw.roleName) {
+      roleName = userRaw.roleName;
     }
 
-    if (!allowedRoles.includes(roleName)) {
-      // Redirigir al home si no tiene permisos
+    // 2. Si después de buscar por todo el objeto no encontramos nada, imprimimos alerta en la consola
+    if (!roleName) {
+      console.error("🚨 KANTUTA POS ERROR: No se pudo extraer el rol del objeto usuario. Estructura actual de user:", user);
+      return <Navigate to="/" replace />;
+    }
+
+    // 3. Normalizamos a minúsculas para comparar con seguridad total
+    const normalizedRole = roleName.toLowerCase().trim();
+    const normalizedAllowedRoles = allowedRoles.map(role => role.toLowerCase().trim());
+
+    // CONTROL DE AUDITORÍA EN CONSOLA (F12)
+    console.log("🔒 [Guard de Rutas]", {
+      Ruta_Destino: window.location.pathname,
+      Rol_Detectado: normalizedRole,
+      Roles_Permitidos: normalizedAllowedRoles,
+      Acceso_Concedido: normalizedAllowedRoles.includes(normalizedRole)
+    });
+
+    if (!normalizedAllowedRoles.includes(normalizedRole)) {
+      // Redirigir al home si el rol no coincide con los autorizados
       return <Navigate to="/" replace />;
     }
   }
 
-  // Si hay sesión iniciada y tiene permisos, renderiza la vista destino
+  // Si pasó todas las validaciones, renderiza la vista destino (ej: Usuarios)
   return <Outlet />;
 }
