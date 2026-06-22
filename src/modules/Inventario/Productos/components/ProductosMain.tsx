@@ -13,7 +13,11 @@ import { useModal } from "../../../../hooks/useModal";
 import { io } from "socket.io-client";
 import { API_BASE_URL } from "../../../../components/auth/services/urlBase";
 import { useAuth } from "../../../../context/auth/AuthContext";
+import { useRole } from "../../../../hooks/useRole";
 import axios from "axios";
+import { pdf } from "@react-pdf/renderer";
+import { FichaProductoPdf } from "../../../../components/pdf/FichaProductoPdf";
+import { ReporteInventarioPDF } from "../../../Reportes/components/ReporteInventarioPDF";
 
 const ProductosMain = () => {
   const [data, setData] = useState<Producto[]>([]);
@@ -22,15 +26,7 @@ const ProductosMain = () => {
   const { isOpen, openModal, closeModal } = useModal();
   const navigate = useNavigate();
   const { user } = useAuth();
-
-  let roleName = "";
-  if (user?.role) {
-    if (typeof user.role === "object" && "name" in user.role) {
-      roleName = user.role.name;
-    } else if (typeof user.role === "string") {
-      roleName = user.role;
-    }
-  }
+  const { isAdmin } = useRole();
 
   const fetchProducts = async () => {
     try {
@@ -95,11 +91,10 @@ const ProductosMain = () => {
     try {
       setDownloadingPdf(true);
       const auditor = user?.name || "Auditor Autorizado";
-      const response = await axios.get(`${API_BASE_URL}/reportes/pdf/inventario?auditor=${encodeURIComponent(auditor)}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-        responseType: "blob",
+      const response = await axios.get(`${API_BASE_URL}/reportes/data/inventario?auditor=${encodeURIComponent(auditor)}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` }
       });
-      const blob = new Blob([response.data], { type: "application/pdf" });
+      const blob = await pdf(<ReporteInventarioPDF datos={response.data} />).toBlob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = downloadUrl;
@@ -109,6 +104,7 @@ const ProductosMain = () => {
       link.remove();
       window.URL.revokeObjectURL(downloadUrl);
     } catch (err) {
+      console.error(err);
       alert("Error al descargar el PDF del inventario");
     } finally {
       setDownloadingPdf(false);
@@ -192,30 +188,30 @@ const ProductosMain = () => {
             className="bg-purple-600 hover:bg-purple-700 text-white"
             variant="primary"
             size="sm"
-            onClick={async () => {
-              try {
-                const response = await axios.get(`${API_BASE_URL}/reportes/pdf/producto/${row.id}`, {
-                  headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-                  responseType: "blob",
-                });
-                const blob = new Blob([response.data], { type: "application/pdf" });
-                const downloadUrl = window.URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = downloadUrl;
-                link.setAttribute("download", `ficha-producto-${row.id}.pdf`);
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                window.URL.revokeObjectURL(downloadUrl);
-              } catch (err) {
-                alert("Error al descargar la ficha en PDF.");
-              }
-            }}
+              onClick={async () => {
+                try {
+                  const response = await axios.get(`${API_BASE_URL}/reportes/data/producto/${row.id}`, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` }
+                  });
+                  const blob = await pdf(<FichaProductoPdf data={response.data} />).toBlob();
+                  const downloadUrl = window.URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.href = downloadUrl;
+                  link.setAttribute("download", `ficha-producto-${row.id}.pdf`);
+                  document.body.appendChild(link);
+                  link.click();
+                  link.remove();
+                  window.URL.revokeObjectURL(downloadUrl);
+                } catch (err) {
+                  console.error(err);
+                  alert("Error al estructurar la ficha en PDF.");
+                }
+              }}
             startIcon={<span className="font-bold">📄</span>}
           >
             PDF
           </ButtonSmallAction>
-          {roleName !== 'Operador' && (
+          {isAdmin && (
             <>
               <ButtonEdit
                 className=""
@@ -256,7 +252,7 @@ const ProductosMain = () => {
           </p>
         </div>
         <div className="flex gap-3">
-          {roleName !== 'Operador' && (
+          {isAdmin && (
             <>
               <Button
                 variant="primary"
@@ -413,7 +409,7 @@ const ProductosMain = () => {
 
             {/* Botones del modal */}
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-              {roleName !== 'Operador' && (
+              {isAdmin && (
                 <Button
                   variant="primary"
                   size="sm"

@@ -11,8 +11,11 @@ import { Caja, SesionCaja } from "../interfaces/Caja";
 import ComponentCard from "../../../components/common/ComponentCard";
 import { useCaja } from "../../../context/CajaContext";
 import { useAuth } from "../../../context/auth/AuthContext";
+import { useRole } from "../../../hooks/useRole";
 import { API_BASE_URL } from "../../../components/auth/services/urlBase";
 import axios from "axios";
+import { pdf } from "@react-pdf/renderer";
+import { MovimientosCajaPdf } from "../../../components/pdf/MovimientosCajaPdf";
 
 const CajasControl = () => {
   // Core data
@@ -20,15 +23,7 @@ const CajasControl = () => {
   const [sesionActiva, setSesionActiva] = useState<SesionCaja | null>(null);
   const { abrirCaja, cerrarCaja } = useCaja();
   const { user } = useAuth();
-
-  let roleName = "";
-  if (user?.role) {
-    if (typeof user.role === "object" && "name" in user.role) {
-      roleName = user.role.name;
-    } else if (typeof user.role === "string") {
-      roleName = user.role;
-    }
-  }
+  const { isAdmin } = useRole();
   
   // Form state – apertura
   const [montoInicial, setMontoInicial] = useState<number>(0);
@@ -138,11 +133,10 @@ const CajasControl = () => {
   const handleDownloadPDF = async () => {
     if (!sesionActiva) return;
     try {
-      const response = await axios.get(`${API_BASE_URL}/reportes/pdf/movimientos-caja/${sesionActiva.id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-        responseType: "blob",
+      const response = await axios.get(`${API_BASE_URL}/reportes/data/movimientos-caja/${sesionActiva.id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` }
       });
-      const blob = new Blob([response.data], { type: "application/pdf" });
+      const blob = await pdf(<MovimientosCajaPdf data={response.data} />).toBlob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = downloadUrl;
@@ -152,7 +146,8 @@ const CajasControl = () => {
       link.remove();
       window.URL.revokeObjectURL(downloadUrl);
     } catch (err) {
-      alert("Error al descargar el PDF");
+      console.error(err);
+      alert("Error al estructurar el PDF de movimientos.");
     }
   };
 
@@ -224,7 +219,6 @@ const CajasControl = () => {
                 </div>
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                   <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">Abrir Nueva Sesión</h4>
-                  {roleName !== "Operador" && (
                     <div className="mb-3">
                       <Label>Monto Inicial (Bs.)</Label>
                       <Input
@@ -235,7 +229,6 @@ const CajasControl = () => {
                         onChange={e => setMontoInicial(Number(e.target.value))}
                       />
                     </div>
-                  )}
                   <Button variant="primary" className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={handleAbrirSesion}>Abrir Caja</Button>
                 </div>
               </div>

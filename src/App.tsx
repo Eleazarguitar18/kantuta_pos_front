@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
+import ResetPassword from "./pages/AuthPages/ResetPassword";
 import NotFound from "./pages/OtherPage/NotFound";
 import UserProfiles from "./pages/UserProfiles";
 import Videos from "./pages/UiElements/Videos";
@@ -66,14 +67,14 @@ export default function App() {
                 <Route path="/inventario">
                   <Route path="productos">
                     <Route index element={<ProductosMain />} />
-                    <Route element={<ProtectedRoute allowedRoles={['Administrador', 'Jefe de Tienda']} />}>
+                    <Route element={<ProtectedRoute allowedRoles={['Administrador']} />}>
                       <Route path="registrar" element={<ProductosRegister />} />
                       <Route path="editar/:id_producto" element={<ProductosEdit />} />
                     </Route>
                   </Route>
                   <Route path="categorias">
                     <Route index element={<CategoriasMain />} />
-                    <Route element={<ProtectedRoute allowedRoles={['Administrador', 'Jefe de Tienda']} />}>
+                    <Route element={<ProtectedRoute allowedRoles={['Administrador']} />}>
                       <Route path="registrar" element={<CategoriasRegister />} />
                       <Route path="editar/:id_categoria" element={<CategoriasEdit />} />
                     </Route>
@@ -88,7 +89,7 @@ export default function App() {
                 <Route path="/cajas">
                   <Route index element={<CajasMain />} />
                   <Route path="control/:id" element={<CajasControl />} />
-                  <Route element={<ProtectedRoute allowedRoles={['Administrador', 'Jefe de Tienda']} />}>
+                  <Route element={<ProtectedRoute allowedRoles={['Administrador']} />}>
                     <Route path="registrar" element={<CajasRegister />} />
                     <Route path="editar/:id" element={<CajasEdit />} />
                   </Route>
@@ -113,7 +114,7 @@ export default function App() {
                 </Route>
 
                 {/* Reportes */}
-                <Route path="/reportes" element={<ProtectedRoute allowedRoles={['Administrador', 'Jefe de Tienda']} />}>
+                <Route path="/reportes" element={<ProtectedRoute allowedRoles={['Administrador']} />}>
                   <Route index element={<ReportesMain />} />
                   <Route path="caja" element={<ReporteCajaSelector />} />
                   <Route path="ventas" element={<ReporteVentasRango />} />
@@ -124,7 +125,7 @@ export default function App() {
 
                 {/* Usuarios (Administracion) */}
                 <Route path="/administracion">
-                  <Route path="usuarios" element={<ProtectedRoute allowedRoles={['Administrador', 'Jefe de Tienda']} />}>
+                  <Route path="usuarios" element={<ProtectedRoute allowedRoles={['Administrador']} />}>
                     <Route index element={<UsuariosMain />} />
                     <Route path="registrar" element={<UsuariosRegister />} />
                     <Route path="editar/:id" element={<UserProfiles />} />
@@ -158,6 +159,7 @@ export default function App() {
             {/* Auth Layout */}
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Fallback Route */}
             <Route path="*" element={<NotFound />} />

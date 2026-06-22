@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import Button from "../../../../components/ui/button/Button";
 import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
@@ -20,12 +20,21 @@ const UsuariosRegister = () => {
     genero: "M",
     name: "",
     estado: true,
+    id_role: undefined,
   });
+
+  const [roles, setRoles] = useState<any[]>([]);
 
   const [showAlert, setShowAlert] = useState(false);
   const [showError, setShowError] = useState(false);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    UsuariosService.getRoles()
+      .then((res) => setRoles(res.data || []))
+      .catch((err) => console.error("Error fetching roles:", err));
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { id, value } = e.target;
@@ -96,6 +105,17 @@ const UsuariosRegister = () => {
             <div>
               <Label htmlFor="name">Nombre de Usuario (Username)</Label>
               <Input type="text" id="name" value={formData.name} onChange={handleChange} placeholder="Ej: jdoe99" />
+            </div>
+            <div>
+              <Label htmlFor="id_role">Rol del Usuario</Label>
+              <Select
+                options={[
+                  { value: "", label: "Seleccione un rol" },
+                  ...roles.map((r) => ({ value: r.id.toString(), label: r.nombre })),
+                ]}
+                onChange={(val) => setFormData(prev => ({...prev, id_role: val ? parseInt(val.toString(), 10) : undefined}))}
+                defaultValue={formData.id_role?.toString() || ""}
+              />
             </div>
           </div>
 

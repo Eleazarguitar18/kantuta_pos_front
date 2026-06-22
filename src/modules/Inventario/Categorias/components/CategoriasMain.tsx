@@ -8,7 +8,7 @@ import ButtonEdit from "../../../../components/ui/button/ButtonEdit";
 import ButtonSmallAction from "../../../../components/ui/button/ButtonSmallAction";
 import Button from "../../../../components/ui/button/Button";
 import { SocketContext } from "../../../../context/SocketContext";
-import { useAuth } from "../../../../context/auth/AuthContext";
+import { useRole } from "../../../../hooks/useRole";
 interface Categoria {
   id: number;
   nombre: string;
@@ -19,16 +19,7 @@ const CategoriasMain = () => {
   const socket = useContext(SocketContext);
   const [data, setData] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
-
-  let roleName = "";
-  if (user?.role) {
-    if (typeof user.role === "object" && "name" in user.role) {
-      roleName = user.role.name;
-    } else if (typeof user.role === "string") {
-      roleName = user.role;
-    }
-  }
+  const { isAdmin } = useRole();
 
   // 1. Extraemos la lógica de carga a una función estable
   const fetchCategories = useCallback(async () => {
@@ -108,9 +99,7 @@ const CategoriasMain = () => {
     },
   ];
 
-  const finalColumns = roleName === "Operador" 
-    ? columns.filter(col => col.name !== "Acciones") 
-    : columns;
+  const finalColumns = isAdmin ? columns : columns.filter(col => col.name !== "Acciones");
 
   return (
     <div>
@@ -122,7 +111,7 @@ const CategoriasMain = () => {
           </p>
         </div>
         <div className="flex gap-3">
-          {roleName !== 'Operador' && (
+          {isAdmin && (
             <Button
               variant="primary"
               size="sm"

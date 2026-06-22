@@ -14,9 +14,10 @@ interface ReportesModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
+  onGenerate?: (startDate: string, endDate: string) => void;
 }
 
-const ReportesModal = ({ isOpen, onClose, title = "Generar Reporte en PDF" }: ReportesModalProps) => {
+const ReportesModal = ({ isOpen, onClose, title = "Generar Reporte en PDF", onGenerate }: ReportesModalProps) => {
   const [mode, setMode] = useState<"MES" | "RANGO">("MES");
   const [selectedMonth, setSelectedMonth] = useState<string>((new Date().getMonth() + 1).toString());
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
@@ -64,6 +65,12 @@ const ReportesModal = ({ isOpen, onClose, title = "Generar Reporte en PDF" }: Re
       if (!startDate || !endDate) return alert("Seleccione el rango completo");
       sDate = startDate;
       eDate = endDate;
+    }
+
+    if (onGenerate) {
+      // If a custom generator is passed, let it handle the logic and close the modal
+      onGenerate(sDate, eDate);
+      return;
     }
 
     try {

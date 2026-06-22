@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import axios from "axios";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
@@ -8,6 +8,8 @@ import Alert from "../../../components/ui/alert/Alert";
 import Label from "../../../components/form/Label";
 import Input from "../../../components/form/input/InputField";
 import { API_BASE_URL } from "../../../components/auth/services/urlBase";
+import { pdf } from "@react-pdf/renderer";
+import { ProductividadOperadorPdf } from "../../../components/pdf/ProductividadOperadorPdf";
 
 const quickRanges = [
   { label: "Hoy", getDates: () => { const t = new Date().toISOString().split("T")[0]; return { inicio: t, fin: t }; } },
@@ -40,6 +42,17 @@ const ReporteProductividad = () => {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedQuick, setSelectedQuick] = useState<string | null>(null);
+  
+  const [operadores, setOperadores] = useState<any[]>([]);
+  const [selectedOperador, setSelectedOperador] = useState<string>("todos");
+
+  useEffect(() => {
+    axios.get(`${API_BASE_URL}/usuario`, { headers: getHeaders() })
+      .then(res => {
+        const users = res.data.data || res.data;
+        setOperadores(users);
+      }).catch(console.error);
+  }, []);
 
   const getHeaders = () => ({
     Authorization: `Bearer ${localStorage.getItem("access_token")}`,
@@ -58,13 +71,15 @@ const ReporteProductividad = () => {
     try {
       setCargando(true);
       setError(null);
-      const url = `${API_BASE_URL}/reportes/pdf/productividad-operador?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`;
+      let url = `${API_BASE_URL}/reportes/data/productividad-operador?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`;
+      if (selectedOperador !== "todos") {
+        url += `&operadorId=${selectedOperador}`;
+      }
       const response = await axios.get(url, {
         headers: getHeaders(),
-        responseType: "blob",
       });
 
-      const blob = new Blob([response.data], { type: "application/pdf" });
+      const blob = await pdf(<ProductividadOperadorPdf data={response.data} />).toBlob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = downloadUrl;
@@ -75,7 +90,7 @@ const ReporteProductividad = () => {
       window.URL.revokeObjectURL(downloadUrl);
     } catch (err: any) {
       console.error(err);
-      setError("Error al generar el PDF. Intente de nuevo.");
+      setError("Error al estructurar el PDF de productividad. Intente de nuevo.");
     } finally {
       setCargando(false);
     }
@@ -167,6 +182,22 @@ const ReporteProductividad = () => {
                   }}
                 />
               </div>
+            </div>
+            
+            <div className="mb-6">
+              <Label>Filtrar por Operador</Label>
+              <select
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                value={selectedOperador}
+                onChange={(e) => setSelectedOperador(e.target.value)}
+              >
+                <option value="todos">Todos los operadores</option>
+                {operadores.map((op) => (
+                  <option key={op.id} value={op.id}>
+                    {op.persona?.nombres} {op.persona?.p_apellido} ({op.email})
+                  </option>
+                ))}
+              </select>
             </div>
 
             {fechaInicio && fechaFin && (

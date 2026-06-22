@@ -9,6 +9,8 @@ import Label from "../../../components/form/Label";
 import Input from "../../../components/form/input/InputField";
 import { useAuth } from "../../../context/auth/AuthContext";
 import { API_BASE_URL } from "../../../components/auth/services/urlBase";
+import { pdf } from "@react-pdf/renderer";
+import { ComprasRangoPdf } from "../../../components/pdf/ComprasRangoPdf";
 
 const quickRanges = [
   { label: "Hoy", getDates: () => { const t = new Date().toISOString().split("T")[0]; return { inicio: t, fin: t }; } },
@@ -61,13 +63,12 @@ const ReporteComprasRango = () => {
       setCargando(true);
       setError(null);
       const auditor = user?.name || "Auditor Autorizado";
-      const url = `${API_BASE_URL}/reportes/pdf/compras-rango?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}&auditor=${encodeURIComponent(auditor)}`;
+      const url = `${API_BASE_URL}/reportes/data/compras-rango?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}&auditor=${encodeURIComponent(auditor)}`;
       const response = await axios.get(url, {
         headers: getHeaders(),
-        responseType: "blob",
       });
 
-      const blob = new Blob([response.data], { type: "application/pdf" });
+      const blob = await pdf(<ComprasRangoPdf data={response.data} />).toBlob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = downloadUrl;
@@ -78,7 +79,7 @@ const ReporteComprasRango = () => {
       window.URL.revokeObjectURL(downloadUrl);
     } catch (err: any) {
       console.error(err);
-      setError("Error al generar el PDF de compras. Intente de nuevo.");
+      setError("Error al estructurar el PDF de compras. Intente de nuevo.");
     } finally {
       setCargando(false);
     }

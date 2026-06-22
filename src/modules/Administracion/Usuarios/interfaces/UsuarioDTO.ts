@@ -8,6 +8,7 @@ export interface RegisterUsuarioRequest {
   genero: string;
   name?: string;
   estado?: boolean;
+  id_role?: number;
 }
 
 export interface UpdateUsuarioRequest {
@@ -15,6 +16,7 @@ export interface UpdateUsuarioRequest {
   email?: string;
   password?: string;
   estado?: boolean;
+  id_role?: number;
 }
 
 export interface UpdatePersonaRequest {

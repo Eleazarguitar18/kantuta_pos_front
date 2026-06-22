@@ -8,24 +8,17 @@ import ButtonSmallAction from "../../../components/ui/button/ButtonSmallAction";
 import Button from "../../../components/ui/button/Button";
 import { Caja } from "../interfaces/Caja";
 import ButtonEdit from "../../../components/ui/button/ButtonEdit";
-import { useAuth } from "../../../context/auth/AuthContext";
+import { useRole } from "../../../hooks/useRole";
 import axios from "axios";
 import { API_BASE_URL } from "../../../components/auth/services/urlBase";
+import { pdf } from "@react-pdf/renderer";
+import { CajaHistorialPdf } from "../../../components/pdf/CajaHistorialPdf";
 
 const CajasMain = () => {
   const [data, setData] = useState<Caja[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const { user } = useAuth();
-
-  let roleName = "";
-  if (user?.role) {
-    if (typeof user.role === "object" && "name" in user.role) {
-      roleName = user.role.name;
-    } else if (typeof user.role === "string") {
-      roleName = user.role;
-    }
-  }
+  const { isAdmin } = useRole();
 
   const fetchCajas = async () => {
     try {
@@ -113,28 +106,28 @@ const CajasMain = () => {
             size="sm"
             onClick={async () => {
               try {
-                const response = await axios.get(`${API_BASE_URL}/reportes/pdf/caja-historial/${row.id}`, {
-                  headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-                  responseType: "blob",
+                const response = await axios.get(`${API_BASE_URL}/reportes/data/caja-historial/${row.id}`, {
+                  headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` }
                 });
-                const blob = new Blob([response.data], { type: "application/pdf" });
+                const blob = await pdf(<CajaHistorialPdf data={response.data} />).toBlob();
                 const downloadUrl = window.URL.createObjectURL(blob);
                 const link = document.createElement("a");
                 link.href = downloadUrl;
-                link.setAttribute("download", `extracto-caja-${row.id}.pdf`);
+                link.setAttribute("download", `caja-historial-${row.id}.pdf`);
                 document.body.appendChild(link);
                 link.click();
                 link.remove();
                 window.URL.revokeObjectURL(downloadUrl);
               } catch (err) {
-                alert("Error al descargar el extracto histórico de la caja.");
+                console.error(err);
+                alert("Error al estructurar el extracto de caja en PDF. Asegúrese de que la caja tenga movimientos.");
               }
             }}
             startIcon={<span className="font-bold">📄</span>}
           >
             PDF Historial
           </ButtonSmallAction>
-          {roleName !== 'Operador' && (
+          {isAdmin && (
             <>
               <ButtonEdit
                 variant="primary"
@@ -174,7 +167,7 @@ const CajasMain = () => {
           </p>
         </div>
         <div className="flex gap-3">
-          {roleName !== 'Operador' && (
+          {isAdmin && (
             <>
               <Button
                 variant="primary"

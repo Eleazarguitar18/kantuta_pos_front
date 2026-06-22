@@ -12,9 +12,13 @@ import { useModal } from "../../../hooks/useModal";
 import Alert from "../../../components/ui/alert/Alert";
 import ReportesModal from "../../../components/common/ReportesModal";
 import { useAuth } from "../../../context/auth/AuthContext";
+import { useRole } from "../../../hooks/useRole";
 import { API_BASE_URL } from "../../../components/auth/services/urlBase";
 import axios from "axios";
 import { ModalReporteVentas } from "./ModalReporteVentas";
+import { pdf } from "@react-pdf/renderer";
+import { TicketVentaPdf } from "../../../components/pdf/TicketVentaPdf";
+import { ReporteVentasPDF } from "./ReporteVentasPDF";
 
 const VentasMain = () => {
   const [data, setData] = useState<Venta[]>([]);
@@ -25,6 +29,7 @@ const VentasMain = () => {
   const { isOpen, openModal, closeModal } = useModal();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isAdmin } = useRole();
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
@@ -72,12 +77,11 @@ const VentasMain = () => {
       setDownloadingPdf(true);
       setReportModalOpen(false);
       const auditor = user?.name || "Auditor Autorizado";
-      const url = `${API_BASE_URL}/reportes/pdf/ventas-rango?fechaInicio=${startDate}&fechaFin=${endDate}&auditor=${encodeURIComponent(auditor)}`;
+      const url = `${API_BASE_URL}/reportes/data/ventas-rango?fechaInicio=${startDate}&fechaFin=${endDate}&auditor=${encodeURIComponent(auditor)}`;
       const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-        responseType: "blob",
+        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` }
       });
-      const blob = new Blob([response.data], { type: "application/pdf" });
+      const blob = await pdf(<ReporteVentasPDF datos={response.data} rango={`${startDate} al ${endDate}`} />).toBlob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = downloadUrl;
@@ -87,6 +91,7 @@ const VentasMain = () => {
       link.remove();
       window.URL.revokeObjectURL(downloadUrl);
     } catch (err) {
+      console.error(err);
       alert("Error al generar el PDF de ventas.");
     } finally {
       setDownloadingPdf(false);
@@ -169,11 +174,12 @@ const VentasMain = () => {
             size="sm"
             onClick={async () => {
               try {
-                const response = await axios.get(`${API_BASE_URL}/reportes/pdf/venta/${row.id}`, {
-                  headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-                  responseType: "blob",
+                // Fetch JSON data instead of Blob
+                const response = await axios.get(`${API_BASE_URL}/reportes/data/venta/${row.id}`, {
+                  headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` }
                 });
-                const blob = new Blob([response.data], { type: "application/pdf" });
+                // Generate PDF locally
+                const blob = await pdf(<TicketVentaPdf data={response.data} />).toBlob();
                 const downloadUrl = window.URL.createObjectURL(blob);
                 const link = document.createElement("a");
                 link.href = downloadUrl;
@@ -183,14 +189,15 @@ const VentasMain = () => {
                 link.remove();
                 window.URL.revokeObjectURL(downloadUrl);
               } catch (err) {
-                alert("Error al descargar el ticket en PDF.");
+                console.error(err);
+                alert("Error al estructurar el ticket en PDF.");
               }
             }}
             startIcon={<span className="font-bold">📄</span>}
           >
             PDF
           </ButtonSmallAction>
-          {row.estado_venta === "COMPLETADA" && (
+          {isAdmin && row.estado_venta === "COMPLETADA" && (
             <ButtonSmallAction
               className="bg-red-500 hover:bg-red-600 text-white"
               variant="primary"
@@ -220,15 +227,17 @@ const VentasMain = () => {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setReportModalOpen(true)}
-            disabled={downloadingPdf}
-            className="bg-purple-600 hover:bg-purple-700 text-white"
-          >
-            {downloadingPdf ? "Generando..." : "📄 Reporte PDF"}
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setReportModalOpen(true)}
+              disabled={downloadingPdf}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {downloadingPdf ? "Generando..." : "📄 Reporte PDF"}
+            </Button>
+          )}
           <Button
             variant="primary"
             size="sm"
@@ -363,6 +372,7 @@ const VentasMain = () => {
         isOpen={reportModalOpen}
         onClose={() => setReportModalOpen(false)}
         title="Reporte de Ventas (PDF)"
+        onGenerate={handleDownloadVentasPdf}
       />
     </div>
   );

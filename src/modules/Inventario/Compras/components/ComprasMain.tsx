@@ -11,8 +11,11 @@ import { Modal } from "../../../../components/ui/modal";
 import { useModal } from "../../../../hooks/useModal";
 import ReportesModal from "../../../../components/common/ReportesModal";
 import { useAuth } from "../../../../context/auth/AuthContext";
+import { useRole } from "../../../../hooks/useRole";
 import { API_BASE_URL } from "../../../../components/auth/services/urlBase";
 import axios from "axios";
+import { pdf } from "@react-pdf/renderer";
+import { ComprasRangoPdf } from "../../../../components/pdf/ComprasRangoPdf";
 
 const ComprasMain = () => {
   const [data, setData] = useState<Compra[]>([]);
@@ -21,6 +24,7 @@ const ComprasMain = () => {
   const { isOpen, openModal, closeModal } = useModal();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isAdmin } = useRole();
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
@@ -61,12 +65,11 @@ const ComprasMain = () => {
       setDownloadingPdf(true);
       setReportModalOpen(false);
       const auditor = user?.name || "Auditor Autorizado";
-      const url = `${API_BASE_URL}/reportes/pdf/compras-rango?fechaInicio=${startDate}&fechaFin=${endDate}&auditor=${encodeURIComponent(auditor)}`;
+      const url = `${API_BASE_URL}/reportes/data/compras-rango?fechaInicio=${startDate}&fechaFin=${endDate}&auditor=${encodeURIComponent(auditor)}`;
       const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-        responseType: "blob",
       });
-      const blob = new Blob([response.data], { type: "application/pdf" });
+      const blob = await pdf(<ComprasRangoPdf data={response.data} />).toBlob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = downloadUrl;
@@ -76,7 +79,8 @@ const ComprasMain = () => {
       link.remove();
       window.URL.revokeObjectURL(downloadUrl);
     } catch (err) {
-      alert("Error al generar el PDF de compras.");
+      console.error(err);
+      alert("Error al estructurar el PDF de compras.");
     } finally {
       setDownloadingPdf(false);
     }
@@ -151,15 +155,17 @@ const ComprasMain = () => {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setReportModalOpen(true)}
-            disabled={downloadingPdf}
-            className="bg-purple-600 hover:bg-purple-700 text-white"
-          >
-            {downloadingPdf ? "Generando..." : "📄 Reporte PDF"}
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setReportModalOpen(true)}
+              disabled={downloadingPdf}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {downloadingPdf ? "Generando..." : "📄 Reporte PDF"}
+            </Button>
+          )}
           <Button
             variant="primary"
             size="sm"

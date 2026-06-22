@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
-import { useAuth } from "../context/auth/AuthContext";
+import { useRole } from "../hooks/useRole";
 
 // Assume these icons are imported from an icon library
 import {
@@ -98,22 +98,12 @@ const othersItems: NavItem[] = [];
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
-  const { user } = useAuth();
+  const { isOperator } = useRole();
 
-  let roleName = "";
-  if (user?.role) {
-    if (typeof user.role === "object" && "nombre" in user.role) {
-      roleName = user.role.nombre.toLowerCase(); // 👈 Forzamos minúsculas ('admin', 'operador', 'user')
-    } else if (typeof user.role === "string") {
-      roleName = user.role.toLowerCase();
-    }
-  }
-
-  // 2. Filtramos el menú de navegación de forma estricta según tus roles reales
+  // Filtramos el menú de navegación según el rol del usuario
   const filteredNavItems = navItems.filter((item) => {
-    // roleName ya se transforma a minúsculas automáticamente ('administrador' o 'operador')
-    if (roleName === "operador") {
-      // Al operador de Kantuta POS le bloqueamos la administración y los reportes generales
+    if (isOperator) {
+      // Al operador le bloqueamos la administración y los reportes generales
       const modulosProhibidos = ["Administración", "Reportes"];
       if (modulosProhibidos.includes(item.name)) {
         return false;

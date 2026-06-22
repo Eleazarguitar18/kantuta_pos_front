@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import axios from "axios";
+import { pdf } from "@react-pdf/renderer";
+import { ReporteVentasPDF } from "../../Ventas/components/ReporteVentasPDF";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
 import ComponentCard from "../../../components/common/ComponentCard";
 import Button from "../../../components/ui/button/Button";
@@ -66,13 +68,16 @@ const ReporteVentasRango = () => {
       setCargando(true);
       setError(null);
       const auditor = user?.name || "Auditor Autorizado";
-      const url = `${API_BASE_URL}/reportes/pdf/ventas-rango?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}&auditor=${encodeURIComponent(auditor)}`;
+      const url = `${API_BASE_URL}/reportes/data/ventas-rango?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}&auditor=${encodeURIComponent(auditor)}`;
       const response = await axios.get(url, {
         headers: getHeaders(),
-        responseType: "blob",
       });
 
-      const blob = new Blob([response.data], { type: "application/pdf" });
+      const datosReporte = response.data;
+      const rangoTexto = `${fechaInicio} al ${fechaFin}`;
+
+      // Generar el PDF en el frontend
+      const blob = await pdf(<ReporteVentasPDF datos={datosReporte} rango={rangoTexto} />).toBlob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = downloadUrl;

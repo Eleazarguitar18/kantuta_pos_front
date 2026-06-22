@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import axios from "axios";
+import { pdf } from "@react-pdf/renderer";
+import { MovimientosCajaPdf } from "../../../components/pdf/MovimientosCajaPdf";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
 import ComponentCard from "../../../components/common/ComponentCard";
 import Button from "../../../components/ui/button/Button";
@@ -67,13 +69,12 @@ const ReporteCajaSelector = () => {
     try {
       setCargandoPdf(true);
       setError(null);
-      const url = `${API_BASE_URL}/reportes/pdf/movimientos-caja/${sesion.id}`;
+      const url = `${API_BASE_URL}/reportes/data/movimientos-caja/${sesion.id}`;
       const response = await axios.get(url, {
         headers: getHeaders(),
-        responseType: "blob",
       });
 
-      const blob = new Blob([response.data], { type: "application/pdf" });
+      const blob = await pdf(<MovimientosCajaPdf data={response.data} />).toBlob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = downloadUrl;
