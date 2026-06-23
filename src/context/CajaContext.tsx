@@ -52,13 +52,16 @@ export const CajaProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user]);
 
   const abrirCaja = async (idCaja: number, montoInicial: number) => {
+    console.log("montoInicial", montoInicial);
+    console.log("idCaja", idCaja);
     if (!user) return;
     const response = await CajasService.abrirSesion({
       id_caja: idCaja,
-      monto_inicial: montoInicial,
+      monto_inicial: Number(montoInicial),
       id_usuario: user.id,
       id_user_create: user.id,
     });
+    // console.log("response", response);
     const data = response.data;
     setSesionActiva(data);
     localStorage.setItem("sesion_caja", JSON.stringify(data));

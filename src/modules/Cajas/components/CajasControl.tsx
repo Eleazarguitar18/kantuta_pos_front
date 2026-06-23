@@ -24,7 +24,7 @@ const CajasControl = () => {
   const { abrirCaja, cerrarCaja } = useCaja();
   const { user } = useAuth();
   const { isAdmin } = useRole();
-  
+
   // Form state – apertura
   const [montoInicial, setMontoInicial] = useState<number>(0);
 
@@ -49,6 +49,7 @@ const CajasControl = () => {
     try {
       const response = await CajasService.getCajaById(Number(id));
       const data: Caja = response.data;
+      setMontoInicial(data.monto_creacion);
       setCaja(data);
       const activa = data.sesiones?.find(s => s.estado_sesion === "ABIERTA");
       setSesionActiva(activa || null);
@@ -189,7 +190,7 @@ const CajasControl = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-400">ID Sesión: <span className="font-medium text-gray-900 dark:text-gray-100">{sesionActiva.id}</span></p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Apertura: <span className="font-medium text-gray-900 dark:text-gray-100">{new Date(sesionActiva.fecha_apertura).toLocaleString()}</span></p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Monto Inicial: <span className="font-semibold text-gray-900 dark:text-gray-100">Bs. {sesionActiva.monto_inicial}</span></p>
-                  
+
                   <div className="mt-4">
                     <Button variant="primary" className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm py-2 px-4" onClick={handleDownloadPDF}>
                       📄 Descargar Extracto (PDF)
@@ -219,16 +220,16 @@ const CajasControl = () => {
                 </div>
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                   <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">Abrir Nueva Sesión</h4>
-                    <div className="mb-3">
-                      <Label>Monto Inicial (Bs.)</Label>
-                      <Input
-                        type="number"
-                        step={0.10}
-                        min="0"
-                        value={montoInicial}
-                        onChange={e => setMontoInicial(Number(e.target.value))}
-                      />
-                    </div>
+                  <div className="mb-3">
+                    <Label>Monto Inicial (Bs.)</Label>
+                    <Input
+                      type="number"
+                      step={0.10}
+                      min="0"
+                      value={montoInicial}
+                      onChange={e => setMontoInicial(Number(e.target.value))}
+                    />
+                  </div>
                   <Button variant="primary" className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={handleAbrirSesion}>Abrir Caja</Button>
                 </div>
               </div>

@@ -11,6 +11,7 @@ export interface Caja extends BaseEntityAudit {
   nombre: string;
   especialidad: "SOLO_VENTAS" | "SOLO_AGENTES" | "MIXTA";
   sesiones?: SesionCaja[];
+  monto_creacion: number;
 }
 
 export interface SesionCaja extends BaseEntityAudit {

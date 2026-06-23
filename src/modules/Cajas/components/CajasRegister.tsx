@@ -45,7 +45,10 @@ const CajasRegister = () => {
         setNombre("");
         setMontoCreacion(0);
         setEspecialidad("MIXTA");
-        setTimeout(() => setShowAlert(false), 3000);
+        setTimeout(() => {
+          setShowAlert(false)
+          navigate("/cajas")
+        }, 2000);
       }
     } catch (error: any) {
       setShowError(true);
