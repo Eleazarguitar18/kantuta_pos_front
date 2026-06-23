@@ -9,6 +9,7 @@ export interface CrearVentaRequest {
   id_sesion_caja: number;
   detalles: DetalleVentaInput[];
   id_user_create: number;
+  // total: number;
 }
 
 export interface ActualizarVentaRequest {

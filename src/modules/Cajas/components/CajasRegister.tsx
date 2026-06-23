@@ -35,7 +35,7 @@ const CajasRegister = () => {
       const payload: CrearCajaRequest = {
         nombre,
         especialidad,
-        monto_creacion: Number(montoCreacion)
+        saldo: Number(montoCreacion)
       };
 
       const response = await CajasService.createCaja(payload);
@@ -107,10 +107,10 @@ const CajasRegister = () => {
           </div>
 
           <div>
-            <Label htmlFor="monto_creacion">Monto de Creación / Saldo Inicial Base (Bs.)</Label>
+            <Label htmlFor="saldo">Monto de Creación / Saldo Inicial Base (Bs.)</Label>
             <Input
               type="number"
-              id="monto_creacion"
+              id="saldo"
               placeholder="Ej: 500.00"
               step={0.10}
               min="0"

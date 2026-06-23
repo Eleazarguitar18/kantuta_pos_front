@@ -5,7 +5,7 @@ export default function Blank() {
   return (
     <div>
       <PageMeta
-        title="React.js Blank Dashboard | Kantuta POS - Next.js Admin Dashboard Template"
+        title="React.js Blank Dashboard | Kantuta POS - Next.js Admin Dashboard"
         description="This is React.js Blank Dashboard page for Kantuta POS - React.js Tailwind CSS Admin Dashboard Template"
       />
       <PageBreadcrumb pageTitle="Blank Page" />

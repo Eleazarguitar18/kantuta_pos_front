@@ -6,8 +6,8 @@ export default function SignIn() {
   return (
     <>
       <PageMeta
-        title="React.js SignIn Dashboard | Kantuta POS - Next.js Admin Dashboard Template"
-        description="This is React.js SignIn Tables Dashboard page for Kantuta POS - React.js Tailwind CSS Admin Dashboard Template"
+        title="Kantuta POS | SignIn"
+        description="Kantuta POS | SignIn"
       />
       <AuthLayout>
         <SignInForm />

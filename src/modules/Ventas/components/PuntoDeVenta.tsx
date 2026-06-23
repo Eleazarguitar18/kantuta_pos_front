@@ -13,6 +13,7 @@ import Alert from "../../../components/ui/alert/Alert";
 import Label from "../../../components/form/Label";
 import { Modal } from "../../../components/ui/modal";
 import { useModal } from "../../../hooks/useModal";
+import { useAuth } from "../../../context/auth/AuthContext";
 
 interface CartItem extends DetalleVentaInput {
   producto_nombre: string;
@@ -33,7 +34,7 @@ const PuntoDeVenta = () => {
   const [showError, setShowError] = useState(false);
 
   const navigate = useNavigate();
-
+  const { user } = useAuth();
   useEffect(() => {
     const fetchProductos = async () => {
       try {
@@ -115,7 +116,8 @@ const PuntoDeVenta = () => {
           cantidad,
           precio_unitario: Number(precio_unitario) || 0
         })),
-        id_user_create: 0
+        id_user_create: user?.id || 0,
+        // total: total,
       };
 
       const response = await VentasService.createVenta(payload);

@@ -94,6 +94,24 @@ function ProductosRegister() {
     value: cat.id.toString(),
     label: cat.nombre,
   }));
+  const generarCodigoUnico = (categoriaNombre: string) => {
+    if (!categoriaNombre) return "";
+
+    // 1. Tomamos las primeras 3 letras de la categoría en mayúsculas (ej: "Accesorios" -> "ACC")
+    const prefijo = categoriaNombre.substring(0, 3).toUpperCase();
+
+    // 2. Obtenemos la fecha y hora actual exacta en formato numérico YYYYMMDDHHMMSS
+    const ahora = new Date();
+    const año = ahora.getFullYear();
+    const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+    const dia = String(ahora.getDate()).padStart(2, '0');
+    const hora = String(ahora.getHours()).padStart(2, '0');
+    const minutos = String(ahora.getMinutes()).padStart(2, '0');
+    const segundos = String(ahora.getSeconds()).padStart(2, '0');
+
+    // Resultado: ACC-20260622212530
+    return `${prefijo}-${año}${mes}${dia}${hora}${minutos}${segundos}`;
+  };
 
   return (
     <div>
@@ -169,12 +187,13 @@ function ProductosRegister() {
               <Input
                 type="text"
                 id="codigo_barras"
-                value={form.getValues("codigo_barras") || ""}
+                value={generarCodigoUnico(form.getValues("nombre"))}
                 onChange={(e) =>
                   form.setValue("codigo_barras", e.target.value, {
                     shouldValidate: true,
                   })
                 }
+                disabled
               />
             </div>
 

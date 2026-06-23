@@ -12,6 +12,7 @@ import ComponentCard from "../../../components/common/ComponentCard";
 import { useCaja } from "../../../context/CajaContext";
 import { useAuth } from "../../../context/auth/AuthContext";
 import { useRole } from "../../../hooks/useRole";
+import { useSocket } from "../../../context/SocketContext";
 import { API_BASE_URL } from "../../../components/auth/services/urlBase";
 import axios from "axios";
 import { pdf } from "@react-pdf/renderer";
@@ -24,6 +25,7 @@ const CajasControl = () => {
   const { abrirCaja, cerrarCaja } = useCaja();
   const { user } = useAuth();
   const { isAdmin } = useRole();
+  const socket = useSocket();
 
   // Form state – apertura
   const [montoInicial, setMontoInicial] = useState<number>(0);
@@ -49,7 +51,7 @@ const CajasControl = () => {
     try {
       const response = await CajasService.getCajaById(Number(id));
       const data: Caja = response.data;
-      setMontoInicial(data.monto_creacion);
+      setMontoInicial(data.saldo);
       setCaja(data);
       const activa = data.sesiones?.find(s => s.estado_sesion === "ABIERTA");
       setSesionActiva(activa || null);
@@ -57,7 +59,7 @@ const CajasControl = () => {
         try {
           const balanceRes = await CajasService.getSesionBalance(activa.id);
           if (balanceRes && balanceRes.data) {
-            setMontoFinalReal(Number(balanceRes.data.monto_final_teorico));
+            setMontoFinalReal(Number(balanceRes.data));
           }
         } catch (error: any) {
           if (error.response?.status === 404) {
@@ -75,6 +77,20 @@ const CajasControl = () => {
   useEffect(() => {
     fetchCajaData();
   }, [id]);
+
+  useEffect(() => {
+    const handleDataChanged = (data: { entity: string; action: string }) => {
+      if (data.entity === "caja") {
+        console.log(`📡 WebSocket detectado en CajasControl: ${data.action}`);
+        fetchCajaData();
+      }
+    };
+
+    socket.on("dataChanged", handleDataChanged);
+    return () => {
+      socket.off("dataChanged", handleDataChanged);
+    };
+  }, [socket, id]);
 
   const handleAbrirSesion = async () => {
     if (montoInicial < 0) return alert("El monto inicial debe ser válido.");

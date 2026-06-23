@@ -1,7 +1,7 @@
 export interface CrearCajaRequest {
   nombre: string;
   especialidad: "SOLO_VENTAS" | "SOLO_AGENTES" | "MIXTA";
-  monto_creacion?: number;
+  saldo?: number;
   id_user_create?: number;
 }
 
