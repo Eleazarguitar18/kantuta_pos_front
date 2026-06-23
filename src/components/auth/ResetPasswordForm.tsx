@@ -19,6 +19,10 @@ export default function ResetPasswordForm() {
 
   const handleRequestCode = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim()) {
+      setErrorMsg("El correo electrónico es requerido");
+      return;
+    }
     setLoading(true);
     setErrorMsg(null);
     try {
@@ -34,6 +38,10 @@ export default function ResetPasswordForm() {
 
   const handleConfirmCode = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!code.trim()) {
+      setErrorMsg("El código de verificación es requerido");
+      return;
+    }
     setLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -50,6 +58,10 @@ export default function ResetPasswordForm() {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newPassword.trim()) {
+      setErrorMsg("La nueva contraseña es requerida");
+      return;
+    }
     setLoading(true);
     setErrorMsg(null);
     try {
@@ -86,7 +98,6 @@ export default function ResetPasswordForm() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Ingresa tu correo"
-                      required
                     />
                   </div>
                   {errorMsg && <div className="text-error-600 text-sm font-medium bg-error-50 p-3 rounded-lg">{errorMsg}</div>}
@@ -108,7 +119,6 @@ export default function ResetPasswordForm() {
                       value={code}
                       onChange={(e) => setCode(e.target.value)}
                       placeholder="Ingresa el código enviado a tu correo"
-                      required
                     />
                   </div>
                   {errorMsg && <div className="text-error-600 text-sm font-medium bg-error-50 p-3 rounded-lg">{errorMsg}</div>}
@@ -130,7 +140,6 @@ export default function ResetPasswordForm() {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Ingresa tu nueva contraseña"
-                      required
                     />
                   </div>
                   {errorMsg && <div className="text-error-600 text-sm font-medium bg-error-50 p-3 rounded-lg">{errorMsg}</div>}
