@@ -20,7 +20,12 @@ function CategoriasEdit() {
       nombre: "",
     },
   });
+  
   form.watch();
+
+  useEffect(() => {
+    form.register("nombre", { required: "El nombre es requerido" });
+  }, [form]);
   const location = useLocation();
   const categoriaAEditar: CategoriaEditDto = location.state as CategoriaEditDto; // Aquí atrapamos el objeto
   const { id_categoria } = useParams();

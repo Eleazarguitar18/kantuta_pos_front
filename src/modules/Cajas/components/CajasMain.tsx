@@ -13,12 +13,14 @@ import axios from "axios";
 import { API_BASE_URL } from "../../../components/auth/services/urlBase";
 import { pdf } from "@react-pdf/renderer";
 import { CajaHistorialPdf } from "../../../components/pdf/CajaHistorialPdf";
+import { useSocket } from "../../../context/SocketContext";
 
 const CajasMain = () => {
   const [data, setData] = useState<Caja[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { isAdmin } = useRole();
+  const socket = useSocket();
 
   const fetchCajas = async () => {
     try {
@@ -35,6 +37,20 @@ const CajasMain = () => {
   useEffect(() => {
     fetchCajas();
   }, []);
+
+  useEffect(() => {
+    const handleDataChanged = (data: { entity: string; action: string }) => {
+      if (data.entity === "caja") {
+        console.log(`📡 WebSocket detectado en CajasMain: ${data.action}`);
+        fetchCajas();
+      }
+    };
+
+    socket.on("dataChanged", handleDataChanged);
+    return () => {
+      socket.off("dataChanged", handleDataChanged);
+    };
+  }, [socket]);
 
   const editCaja = (row: Caja) => {
     navigate(`editar/${row.id}`, { state: row });

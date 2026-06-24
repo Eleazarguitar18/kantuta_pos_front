@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { BoxIcon, TrashBinIcon } from "../../../icons";
 import { useCaja } from "../../../context/CajaContext";
@@ -14,6 +14,8 @@ import Label from "../../../components/form/Label";
 import { Modal } from "../../../components/ui/modal";
 import { useModal } from "../../../hooks/useModal";
 import { useAuth } from "../../../context/auth/AuthContext";
+import { useSocket } from "../../../context/SocketContext";
+import Swal from "sweetalert2";
 
 interface CartItem extends DetalleVentaInput {
   producto_nombre: string;
@@ -35,20 +37,35 @@ const PuntoDeVenta = () => {
 
   const navigate = useNavigate();
   const { user } = useAuth();
+  const socket = useSocket();
+
+  const fetchProductos = useCallback(async () => {
+    try {
+      const response = await ProductosService.getProducts();
+      setProductos(response.data);
+      setFilteredProductos(response.data);
+    } catch (error) {
+      console.error("Error al obtener productos:", error);
+    }
+  }, []);
+
   useEffect(() => {
-    const fetchProductos = async () => {
-      try {
-        const response = await ProductosService.getProducts();
-        // Filtramos solo los productos activos y con stock
-        const disponibles = response.data.filter((p: Producto) => p.stock_actual > 0);
-        setProductos(disponibles);
-        setFilteredProductos(disponibles);
-      } catch (error) {
-        console.error("Error al obtener productos:", error);
+    fetchProductos();
+  }, [fetchProductos]);
+
+  useEffect(() => {
+    const handleDataChanged = (data: { entity: string; action: string }) => {
+      if (data.entity === "producto" || data.entity === "venta" || data.entity === "product") {
+        console.log(`📡 WebSocket detectado en PuntoDeVenta: ${data.entity} - ${data.action}`);
+        fetchProductos();
       }
     };
-    fetchProductos();
-  }, []);
+
+    socket.on("dataChanged", handleDataChanged);
+    return () => {
+      socket.off("dataChanged", handleDataChanged);
+    };
+  }, [socket, fetchProductos]);
 
   useEffect(() => {
     if (searchTerm.trim() === "") {
@@ -65,15 +82,60 @@ const PuntoDeVenta = () => {
     const existing = cart.find(c => c.id_producto === producto.id);
     if (existing) {
       if (existing.cantidad + 1 > producto.stock_actual) {
-        alert("No hay suficiente stock para este producto.");
+        Swal.fire({
+          title: "Stock Insuficiente",
+          text: `No hay suficiente stock para el producto "${producto.nombre}". Stock disponible: ${producto.stock_actual}`,
+          icon: "error",
+          confirmButtonColor: "#ef4444"
+        });
         return;
       }
+      const nuevaCantidad = existing.cantidad + 1;
+      
+      // Alerta de stock mínimo alcanzado
+      if (producto.stock_actual - nuevaCantidad <= producto.stock_minimo) {
+        Swal.fire({
+          title: "¡Stock Mínimo!",
+          text: `El producto "${producto.nombre}" está llegando a su nivel mínimo. Stock restante: ${producto.stock_actual - nuevaCantidad}`,
+          icon: "warning",
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true
+        });
+      }
+
       setCart(cart.map(c =>
         c.id_producto === producto.id
-          ? { ...c, cantidad: c.cantidad + 1 }
+          ? { ...c, cantidad: nuevaCantidad }
           : c
       ));
     } else {
+      if (producto.stock_actual <= 0) {
+        Swal.fire({
+          title: "Producto Agotado",
+          text: `El producto "${producto.nombre}" no cuenta con stock disponible para la venta.`,
+          icon: "error",
+          confirmButtonColor: "#ef4444"
+        });
+        return;
+      }
+
+      // Alerta de stock mínimo al agregar el primero
+      if (producto.stock_actual - 1 <= producto.stock_minimo) {
+        Swal.fire({
+          title: "¡Stock Mínimo!",
+          text: `El producto "${producto.nombre}" está en su nivel mínimo de stock. Stock restante: ${producto.stock_actual - 1}`,
+          icon: "warning",
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true
+        });
+      }
+
       setCart([...cart, {
         id_producto: producto.id!,
         producto_nombre: producto.nombre,
@@ -90,9 +152,30 @@ const PuntoDeVenta = () => {
   const updateQuantity = (id_producto: number, newQuantity: number) => {
     if (newQuantity <= 0) return;
     const producto = productos.find(p => p.id === id_producto);
-    if (producto && newQuantity > producto.stock_actual) {
-      alert("La cantidad excede el stock disponible.");
-      return;
+    if (producto) {
+      if (newQuantity > producto.stock_actual) {
+        Swal.fire({
+          title: "Stock Insuficiente",
+          text: `La cantidad excede el stock disponible para "${producto.nombre}". Stock disponible: ${producto.stock_actual}`,
+          icon: "error",
+          confirmButtonColor: "#ef4444"
+        });
+        return;
+      }
+
+      // Alerta de stock mínimo
+      if (producto.stock_actual - newQuantity <= producto.stock_minimo) {
+        Swal.fire({
+          title: "¡Stock Mínimo!",
+          text: `El producto "${producto.nombre}" está llegando a su nivel mínimo. Stock restante: ${producto.stock_actual - newQuantity}`,
+          icon: "warning",
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true
+        });
+      }
     }
     setCart(cart.map(c =>
       c.id_producto === id_producto
@@ -135,6 +218,7 @@ const PuntoDeVenta = () => {
         });
         setShowAlert(true);
         setCart([]); // limpiar carrito
+        fetchProductos(); // Actualizar stock local de inmediato
         setTimeout(() => setShowAlert(false), 3000);
         openModal();
       }
@@ -146,16 +230,31 @@ const PuntoDeVenta = () => {
         const { status, data } = error.response;
         console.error(`🚨 [Error ${status}] El backend rechazó la venta:`, data);
 
-        // Si tu NestJS manda un mensaje específico (ej: "No hay suficiente stock de Coca-Cola")
         const apiMessage = data?.message || "Error desconocido en el servidor";
         console.log("Mensaje real del error:", apiMessage);
 
+        Swal.fire({
+          title: "Error al Procesar Venta",
+          text: apiMessage,
+          icon: "error",
+          confirmButtonColor: "#ef4444"
+        });
       } else if (error.request) {
-        // La petición se hizo pero el backend nunca respondió (servidor caído o problemas de red)
         console.error("🌐 Error de red: El servidor no respondió a la petición de venta.");
+        Swal.fire({
+          title: "Error de Red",
+          text: "El servidor no respondió a la petición de venta.",
+          icon: "error",
+          confirmButtonColor: "#ef4444"
+        });
       } else {
-        // Algo pasó al armar la petición antes de enviarla
         console.error("⚙️ Error al procesar la venta interna del frontend:", error.message);
+        Swal.fire({
+          title: "Error Interno",
+          text: error.message,
+          icon: "error",
+          confirmButtonColor: "#ef4444"
+        });
       }
     }
   };
@@ -220,7 +319,7 @@ const PuntoDeVenta = () => {
       <div className="flex flex-col lg:flex-row gap-6 flex-1">
 
         {/* Lado Izquierdo: Buscador y Lista de Productos */}
-        <div className="lg:w-2/3 flex flex-col space-y-4">
+        <div className="lg:w-1/2 flex flex-col space-y-4">
           <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-theme-sm border border-gray-200 dark:border-gray-700">
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -236,28 +335,34 @@ const PuntoDeVenta = () => {
             </div>
           </div>
 
-          <div className="flex-1 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-theme-sm border border-gray-200 dark:border-gray-700 overflow-y-auto max-h-[70vh]">
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl shadow-theme-sm border border-gray-200 dark:border-gray-700 overflow-y-auto max-h-[70vh]">
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
               {filteredProductos.map((p) => (
                 <div
                   key={p.id}
                   onClick={() => addToCart(p)}
-                  className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-800 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md cursor-pointer transition-all flex flex-col"
+                  className="flex items-center justify-between px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-950/20 cursor-pointer transition-all"
                 >
-                  <div className="mb-2 flex-1">
-                    <h5 className="font-semibold text-gray-800 dark:text-gray-200 line-clamp-2 leading-tight">{p.nombre}</h5>
-                    <p className="text-xs text-gray-500 mt-1">Cod: {p.codigo_barras || "N/A"}</p>
+                  <div className="flex-1 min-w-0 mr-3">
+                    <h5 className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate">{p.nombre}</h5>
+                    <p className="text-xs text-gray-500 mt-0.5">Cod: {p.codigo_barras || "N/A"}</p>
                   </div>
-                  <div className="flex justify-between items-end mt-2">
-                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">Bs. {Number(p.precio_venta).toFixed(2)}</span>
-                    <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-full">
-                      Stock: {p.stock_actual}
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-sm font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">Bs. {Number(p.precio_venta).toFixed(2)}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
+                      p.stock_actual <= 0 
+                        ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 font-semibold"
+                        : p.stock_actual <= p.stock_minimo
+                        ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                        : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                    }`}>
+                      {p.stock_actual <= 0 ? "Agotado" : `Stock: ${p.stock_actual}`}
                     </span>
                   </div>
                 </div>
               ))}
               {filteredProductos.length === 0 && (
-                <div className="col-span-full py-10 text-center text-gray-500">
+                <div className="py-10 text-center text-gray-500">
                   No se encontraron productos.
                 </div>
               )}
@@ -266,7 +371,7 @@ const PuntoDeVenta = () => {
         </div>
 
         {/* Lado Derecho: Carrito de Compras */}
-        <div className="lg:w-1/3 flex flex-col bg-white dark:bg-gray-800 rounded-2xl shadow-theme-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="lg:w-1/2 flex flex-col bg-white dark:bg-gray-800 rounded-2xl shadow-theme-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
             <h3 className="font-bold text-lg text-gray-800 dark:text-white">Ticket de Venta</h3>
             <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-full">
@@ -282,36 +387,69 @@ const PuntoDeVenta = () => {
               </div>
             ) : (
               cart.map((item) => (
-                <div key={item.id_producto} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800">
-                  <div className="flex-1 mr-3">
-                    <h5 className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate" title={item.producto_nombre}>{item.producto_nombre}</h5>
-                    <div className="text-xs text-gray-500 mt-1">Bs. {Number(item.precio_unitario).toFixed(2)} c/u</div>
+                <div key={item.id_producto} className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800">
+                  {/* Fila superior: nombre + precio unitario + subtotal */}
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1 min-w-0 mr-2">
+                      <h5 className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate" title={item.producto_nombre}>{item.producto_nombre}</h5>
+                      <div className="text-xs text-gray-500 mt-0.5">Bs. {Number(item.precio_unitario).toFixed(2)} c/u</div>
+                    </div>
+                    <div className="font-bold text-sm text-gray-800 dark:text-white whitespace-nowrap">
+                      Bs. {(item.cantidad * item.precio_unitario).toFixed(2)}
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  {/* Fila inferior: controles de cantidad + botón eliminar */}
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                       <button
-                        className="px-2 py-1 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                        onClick={() => updateQuantity(item.id_producto, item.cantidad - 1)}
+                        className="px-2.5 py-1 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                        onClick={() => {
+                          if (item.cantidad - 1 <= 0) {
+                            Swal.fire({
+                              title: "Cantidad Inválida",
+                              text: "La cantidad mínima debe ser 1.",
+                              icon: "warning",
+                              confirmButtonColor: "#ef4444"
+                            });
+                          } else {
+                            updateQuantity(item.id_producto, item.cantidad - 1);
+                          }
+                        }}
                       >-</button>
                       <input
                         type="number"
-                        value={item.cantidad}
-                        onChange={(e) => updateQuantity(item.id_producto, parseInt(e.target.value) || 1)}
-                        className="w-10 text-center text-sm border-x border-gray-200 dark:border-gray-700 bg-transparent focus:outline-none"
+                        value={item.cantidad || ""}
+                        min="1"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "") {
+                            Swal.fire({
+                              title: "Cantidad Vacía",
+                              text: "No puede dejar el campo de cantidad vacío.",
+                              icon: "warning",
+                              confirmButtonColor: "#ef4444"
+                            });
+                            updateQuantity(item.id_producto, 1);
+                          } else {
+                            const newQty = parseInt(val);
+                            if (!isNaN(newQty)) {
+                              updateQuantity(item.id_producto, newQty);
+                            }
+                          }
+                        }}
+                        className="w-12 text-center text-sm border-x border-gray-200 dark:border-gray-700 bg-transparent focus:outline-none"
                       />
                       <button
-                        className="px-2 py-1 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                        className="px-2.5 py-1 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                         onClick={() => updateQuantity(item.id_producto, item.cantidad + 1)}
                       >+</button>
                     </div>
-                    <div className="font-bold text-gray-800 dark:text-white w-16 text-right">
-                      Bs. {(item.cantidad * item.precio_unitario).toFixed(2)}
-                    </div>
                     <button
                       onClick={() => removeFromCart(item.id_producto)}
-                      className="text-red-400 hover:text-red-600 p-1"
+                      className="flex items-center gap-1 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 px-2 py-1 rounded-lg transition-all"
                     >
                       <TrashBinIcon className="w-4 h-4" color="currentColor" />
+                      <span className="text-xs font-medium">Quitar</span>
                     </button>
                   </div>
                 </div>

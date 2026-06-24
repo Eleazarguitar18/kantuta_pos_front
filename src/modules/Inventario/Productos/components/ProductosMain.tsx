@@ -10,10 +10,10 @@ import Button from "../../../../components/ui/button/Button";
 import { Producto } from "../interfaces/Producto";
 import { Modal } from "../../../../components/ui/modal";
 import { useModal } from "../../../../hooks/useModal";
-import { io } from "socket.io-client";
-import { API_BASE_URL } from "../../../../components/auth/services/urlBase";
 import { useAuth } from "../../../../context/auth/AuthContext";
 import { useRole } from "../../../../hooks/useRole";
+import { useSocket } from "../../../../context/SocketContext";
+import { API_BASE_URL } from "../../../../components/auth/services/urlBase";
 import axios from "axios";
 import { pdf } from "@react-pdf/renderer";
 import { FichaProductoPdf } from "../../../../components/pdf/FichaProductoPdf";
@@ -27,6 +27,7 @@ const ProductosMain = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isAdmin } = useRole();
+  const socket = useSocket();
 
   const fetchProducts = async () => {
     try {
@@ -42,22 +43,21 @@ const ProductosMain = () => {
 
   useEffect(() => {
     fetchProducts();
-
-    // Conectamos al servidor (usando tu URL de backend)
-    const socket = io(API_BASE_URL);
-
-    // Escuchamos un evento personalizado (ej: 'productos_cambiados')
-    socket.on("productos_cambiados", () => {
-      console.log("Cambio detectado vía WebSocket. Actualizando...");
-      fetchProducts();
-    });
-
-    // Limpiamos la conexión al cerrar el componente
-    return () => {
-      socket.off("productos_cambiados");
-      socket.disconnect();
-    };
   }, []);
+
+  useEffect(() => {
+    const handleDataChanged = (data: { entity: string; action: string }) => {
+      if (data.entity === "producto" || data.entity === "venta" || data.entity === "product") {
+        console.log("Cambio detectado vía WebSocket en ProductosMain. Actualizando...");
+        fetchProducts();
+      }
+    };
+
+    socket.on("dataChanged", handleDataChanged);
+    return () => {
+      socket.off("dataChanged", handleDataChanged);
+    };
+  }, [socket]);
 
   const viewProducto = (row: Producto) => {
     setSelectedProduct(row);

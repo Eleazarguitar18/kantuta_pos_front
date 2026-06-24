@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { CategoriasService } from "../services/categoriasService";
 import { Categoria } from "../interfaces/Categoria";
 import Alert from "../../../../components/ui/alert/Alert";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function CategoriasRegister() {
   const [showAlert, setShowAlert] = useState(false);
@@ -19,7 +19,12 @@ function CategoriasRegister() {
       nombre: "",
     },
   });
+  
   form.watch();
+
+  useEffect(() => {
+    form.register("nombre", { required: "El nombre es requerido" });
+  }, [form]);
   const onSubmit = async (data: Categoria) => {
     try {
       console.log("Datos que se enviarán a la API:", data);

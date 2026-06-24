@@ -42,14 +42,16 @@ const CategoriasMain = () => {
   // 3. Escucha del evento de Socket.io
   useEffect(() => {
     if (socket) {
-      socket.on("dataChanged", (entity: string) => {
-        if (entity === "category") {
+      const handleDataChanged = (data: { entity: string; action: string }) => {
+        if (data.entity === "category" || data.entity === "categoria") {
           fetchCategories();
         }
-      });
+      };
+
+      socket.on("dataChanged", handleDataChanged);
 
       return () => {
-        socket.off("dataChanged");
+        socket.off("dataChanged", handleDataChanged);
       };
     }
   }, [socket, fetchCategories]);

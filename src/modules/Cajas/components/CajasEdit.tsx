@@ -8,6 +8,7 @@ import Select from "../../../components/form/Select";
 import { CajasService } from "../services/cajasService";
 import Alert from "../../../components/ui/alert/Alert";
 import { Caja } from "../interfaces/Caja";
+import Swal from "sweetalert2";
 
 const CajasEdit = () => {
   const [nombre, setNombre] = useState("");
@@ -41,8 +42,22 @@ const CajasEdit = () => {
   ];
 
   const onSubmit = async () => {
-    if (!nombre.trim() || nombre.length < 3) {
-      alert("El nombre de la caja debe tener al menos 3 caracteres.");
+    if (!nombre.trim()) {
+      Swal.fire({
+        title: "Campo Requerido",
+        text: "El nombre de la caja no puede estar vacío.",
+        icon: "warning",
+        confirmButtonColor: "#ef4444"
+      });
+      return;
+    }
+    if (nombre.length < 3) {
+      Swal.fire({
+        title: "Nombre muy corto",
+        text: "El nombre de la caja debe tener al menos 3 caracteres.",
+        icon: "warning",
+        confirmButtonColor: "#ef4444"
+      });
       return;
     }
 

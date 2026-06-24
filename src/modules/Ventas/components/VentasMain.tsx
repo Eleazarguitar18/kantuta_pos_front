@@ -2,7 +2,7 @@ import { useNavigate } from "react-router";
 import { DocsIcon, TrashBinIcon, PencilIcon } from "../../../icons";
 import DataTable from "react-data-table-component";
 import { VentasService } from "../services/ventasService";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import ComponentCard from "../../../components/common/ComponentCard";
 import ButtonSmallAction from "../../../components/ui/button/ButtonSmallAction";
 import Button from "../../../components/ui/button/Button";
@@ -13,6 +13,7 @@ import Alert from "../../../components/ui/alert/Alert";
 import ReportesModal from "../../../components/common/ReportesModal";
 import { useAuth } from "../../../context/auth/AuthContext";
 import { useRole } from "../../../hooks/useRole";
+import { useSocket } from "../../../context/SocketContext";
 import { API_BASE_URL } from "../../../components/auth/services/urlBase";
 import axios from "axios";
 import { ModalReporteVentas } from "./ModalReporteVentas";
@@ -32,8 +33,9 @@ const VentasMain = () => {
   const { isAdmin } = useRole();
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const socket = useSocket();
 
-  const fetchVentas = async () => {
+  const fetchVentas = useCallback(async () => {
     try {
       setLoading(true);
       const response = await VentasService.getVentas();
@@ -43,11 +45,25 @@ const VentasMain = () => {
       console.error("Error al cargar ventas:", error);
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchVentas();
-  }, []);
+  }, [fetchVentas]);
+
+  useEffect(() => {
+    const handleDataChanged = (data: { entity: string; action: string }) => {
+      if (data.entity === "venta" || data.entity === "producto") {
+        console.log("Cambio detectado vía WebSocket en VentasMain. Actualizando...");
+        fetchVentas();
+      }
+    };
+
+    socket.on("dataChanged", handleDataChanged);
+    return () => {
+      socket.off("dataChanged", handleDataChanged);
+    };
+  }, [socket, fetchVentas]);
 
   const viewVenta = (row: Venta) => {
     setSelectedVenta(row);
