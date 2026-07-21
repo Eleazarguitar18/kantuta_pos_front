@@ -9,6 +9,7 @@ import ButtonSmallAction from "../../../../components/ui/button/ButtonSmallActio
 import Button from "../../../../components/ui/button/Button";
 import { SocketContext } from "../../../../context/SocketContext";
 import { useRole } from "../../../../hooks/useRole";
+import Swal from "sweetalert2";
 interface Categoria {
   id: number;
   nombre: string;
@@ -62,7 +63,39 @@ const CategoriasMain = () => {
     // console.log("Editando ID:", row);
   };
   const deleteCategoria = (row: Categoria) => {
-    console.log("Eliminando ID:", row);
+    Swal.fire({
+      title: "¿Estas seguro de eliminar la categoria?",
+      text: "Esta acción no se puede deshacer",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Si, eliminar",
+      cancelButtonText: "Cancelar",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const response = await CategoriasService.deleteCategory(row.id);
+        console.log(response);
+        if (response.status == 200) {
+          Swal.fire({
+            title: "¡Eliminado!",
+            text: "La categoria ha sido eliminada correctamente",
+            icon: "success",
+            confirmButtonColor: "#3085d6",
+            confirmButtonText: "Aceptar",
+          });
+          fetchCategories();
+        } else {
+          Swal.fire({
+            title: "¡Error!",
+            text: "La categoria no ha sido eliminada",
+            icon: "error",
+            confirmButtonColor: "#3085d6",
+            confirmButtonText: "Aceptar",
+          });
+        }
+      }
+    });
   };
   const columns = [
     {
