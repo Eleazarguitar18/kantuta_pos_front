@@ -302,6 +302,62 @@ const CajasControl = () => {
           </ComponentCard>
         </div>
       </div>
+
+      {/* Panel 3 – Historial de Sesiones */}
+      {caja.sesiones && caja.sesiones.length > 0 && (
+        <div className="mt-6">
+          <ComponentCard title="Historial de Sesiones">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-900">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Apertura</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cierre</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Monto Inicial</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Monto Final (Cierre)</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Diferencia</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Estado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {[...caja.sesiones].sort((a, b) => b.id - a.id).map((s) => (
+                    <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                      <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-300">#{s.id}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{new Date(s.fecha_apertura).toLocaleString()}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{s.fecha_cierre ? new Date(s.fecha_cierre).toLocaleString() : "-"}</td>
+                      <td className="px-4 py-3 text-sm text-right font-medium text-gray-800 dark:text-gray-300">Bs. {Number(s.monto_inicial).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-sm text-right font-semibold">
+                        {s.estado_sesion === "CERRADA" ? (
+                          <span className="text-blue-600 dark:text-blue-400">Bs. {Number(s.monto_final_real ?? 0).toFixed(2)}</span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                            🟡 En Curso
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right font-medium">
+                        {s.estado_sesion === "CERRADA" && s.diferencia !== null ? (
+                          <span className={s.diferencia >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}>
+                            {s.diferencia >= 0 ? "+" : ""}Bs. {Number(s.diferencia).toFixed(2)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${s.estado_sesion === "ABIERTA" ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"}`}>
+                          {s.estado_sesion}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </ComponentCard>
+        </div>
+      )}
     </div>
   );
 };

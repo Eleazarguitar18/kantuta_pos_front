@@ -12,6 +12,7 @@ import { ProductosService } from "../../Productos/services/productosService";
 import { Producto } from "../../Productos/interfaces/Producto";
 import { DetalleCompraInput, CrearCompraRequest } from "../interfaces/CrearCompraRequest";
 import Alert from "../../../../components/ui/alert/Alert";
+import { CajasService } from "../../../Cajas/services/cajasService";
 
 interface DetalleCompraUi extends DetalleCompraInput {
   producto_nombre: string;
@@ -96,6 +97,27 @@ const ComprasRegister = () => {
     if (pagarConCaja && !sesionActiva) {
       alert("Para pagar con caja debe tener una sesión de caja activa abierta.");
       return;
+    }
+
+    // Validar saldo disponible en caja antes de registrar
+    if (pagarConCaja && sesionActiva) {
+      try {
+        const balanceRes = await CajasService.getSesionBalance(sesionActiva.id);
+        const saldoDisponible = Number(balanceRes.data?.monto_final_teorico ?? balanceRes.data ?? 0);
+        if (totalCompra > saldoDisponible) {
+          setErrorMessage(
+            `Saldo insuficiente en caja activa. Disponible: Bs. ${saldoDisponible.toFixed(2)}, Requerido: Bs. ${totalCompra.toFixed(2)}`
+          );
+          setShowError(true);
+          setTimeout(() => setShowError(false), 6000);
+          return;
+        }
+      } catch (err: any) {
+        setErrorMessage("No se pudo verificar el saldo de la caja. Intente nuevamente.");
+        setShowError(true);
+        setTimeout(() => setShowError(false), 5000);
+        return;
+      }
     }
 
     try {

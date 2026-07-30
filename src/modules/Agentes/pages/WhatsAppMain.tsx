@@ -38,6 +38,27 @@ const WhatsAppMain = () => {
     }
   };
 
+  const handleDisconnect = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.post(`${API_BASE_URL}/whatsapp/disconnect`, {}, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        },
+      });
+      if (res.data.success || res.status === 200) {
+        setConnectedMsg(null);
+        setQrBase64(null);
+        await checkConnection();
+      }
+    } catch (err: any) {
+      setError("Error al desvincular WhatsApp.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     checkConnection();
   }, []);
@@ -107,6 +128,15 @@ const WhatsAppMain = () => {
             >
               Recargar Estado / QR
             </Button>
+            {connectedMsg && (
+              <Button
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold"
+                onClick={handleDisconnect}
+                disabled={loading}
+              >
+                Desvincular
+              </Button>
+            )}
           </div>
         </ComponentCard>
       </div>

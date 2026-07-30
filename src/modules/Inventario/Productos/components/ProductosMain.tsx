@@ -138,29 +138,23 @@ const ProductosMain = () => {
     {
       name: "Precio Venta",
       selector: (row: Producto) => row.precio_venta,
+      cell: (row: Producto) => `Bs. ${Number(row.precio_venta).toFixed(2)}`,
       sortable: true,
     },
     {
       name: "Stock Actual",
       selector: (row: Producto) => row.stock_actual,
       cell: (row: Producto) => {
-        const threshold = row.stock_minimo || 10;
-        const ratio = row.stock_actual / threshold;
-        
-        let colorClass = "text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/40 border-green-200 dark:border-green-900";
-        let indicator = "🟢";
-        if (ratio < 0.25) {
-          colorClass = "text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900 font-bold";
-          indicator = "🔴";
-        } else if (ratio <= 0.50) {
-          colorClass = "text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/40 border-yellow-200 dark:border-yellow-900";
-          indicator = "🟡";
-        }
+        const isLowStock = row.stock_actual <= row.stock_minimo;
+        const colorClass = isLowStock 
+          ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+          : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+        const indicator = isLowStock ? "🔴" : "🟢";
 
         return (
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs ${colorClass}`}>
+          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${colorClass}`}>
             <span>{indicator}</span>
-            <span>{row.stock_actual} / {threshold}</span>
+            <span>{row.stock_actual} / {row.stock_minimo}</span>
           </div>
         );
       },
