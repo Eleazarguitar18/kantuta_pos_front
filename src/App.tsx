@@ -47,7 +47,7 @@ import ReporteVentasRango from "./modules/Reportes/components/ReporteVentasRango
 import ReporteComprasRango from "./modules/Reportes/components/ReporteComprasRango";
 import ReporteInventario from "./modules/Reportes/components/ReporteInventario";
 import ReporteProductividad from "./modules/Reportes/components/ReporteProductividad";
-import WhatsAppMain from "./modules/Agentes/pages/WhatsAppMain";
+import WhatsAppMain from "./modules/WhatsApp/pages/WhatsAppMain";
 import { Toaster } from "react-hot-toast";
 
 export default function App() {
