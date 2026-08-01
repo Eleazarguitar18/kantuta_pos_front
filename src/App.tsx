@@ -48,6 +48,7 @@ import ReporteComprasRango from "./modules/Reportes/components/ReporteComprasRan
 import ReporteInventario from "./modules/Reportes/components/ReporteInventario";
 import ReporteProductividad from "./modules/Reportes/components/ReporteProductividad";
 import WhatsAppMain from "./modules/WhatsApp/pages/WhatsAppMain";
+import NotificacionesMain from "./modules/Administracion/Notificaciones/components/NotificacionesMain";
 import { Toaster } from "react-hot-toast";
 
 export default function App() {
@@ -123,12 +124,15 @@ export default function App() {
                   <Route path="productividad" element={<ReporteProductividad />} />
                 </Route>
 
-                {/* Usuarios (Administracion) */}
+                {/* Usuarios y Notificaciones (Administracion) */}
                 <Route path="/administracion">
                   <Route path="usuarios" element={<ProtectedRoute allowedRoles={['Administrador']} />}>
                     <Route index element={<UsuariosMain />} />
                     <Route path="registrar" element={<UsuariosRegister />} />
                     <Route path="editar/:id" element={<UserProfiles />} />
+                  </Route>
+                  <Route path="notificaciones" element={<ProtectedRoute allowedRoles={['Administrador']} />}>
+                    <Route index element={<NotificacionesMain />} />
                   </Route>
                 </Route>
 

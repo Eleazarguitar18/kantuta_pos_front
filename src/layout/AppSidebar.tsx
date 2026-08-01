@@ -89,6 +89,7 @@ const navItems: NavItem[] = [
     name: "Administración",
     subItems: [
       { name: "Usuarios", path: "/administracion/usuarios", pro: false },
+      { name: "Contactos de Notificación", path: "/administracion/notificaciones", pro: false },
     ],
   },
 ];
