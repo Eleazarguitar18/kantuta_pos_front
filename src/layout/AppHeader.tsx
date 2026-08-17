@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useSidebar } from "../context/SidebarContext";
 // import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 // import NotificationDropdown from "../components/header/NotificationDropdown";
@@ -12,9 +12,10 @@ import { CajasService } from "../modules/Cajas/services/cajasService";
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
-  const { sesionActiva, checkSesion } = useCaja(); // <-- Mantenemos checkSesion para actualizar el estado global
+  const { sesionActiva, cajaActiva, checkSesion } = useCaja();
   const socket = useSocket();
   const [saldoActual, setSaldoActual] = useState<number | null>(null);
+  const navigate = useNavigate();
 
   const handleToggle = () => {
     if (window.innerWidth >= 1024) {
@@ -118,11 +119,22 @@ const AppHeader: React.FC = () => {
             <Logo />
           </Link>
 
-          {/* Dinero en caja pill */}
-          {saldoActual !== null && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-900 rounded-full text-xs font-semibold text-green-700 dark:text-green-400 animate-pulse">
-              <span className="w-2 h-2 rounded-full bg-green-500"></span>
-              <span>Caja Activa: Bs. {saldoActual.toFixed(2)}</span>
+          {/* Caja Activa badge + Terminar Turno */}
+          {sesionActiva && saldoActual !== null && (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-900 rounded-full text-xs font-semibold text-green-700 dark:text-green-400 animate-pulse">
+                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                <span>Caja Activa: {cajaActiva?.nombre || `#${sesionActiva.id_caja}`} - Bs. {saldoActual.toFixed(2)}</span>
+              </div>
+              <button
+                onClick={() => navigate(`/cajas/control/${sesionActiva.id_caja}`)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-full text-xs font-semibold text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/60 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Terminar Turno
+              </button>
             </div>
           )}
 

@@ -278,6 +278,21 @@ const NotificacionesMain = () => {
         </Button>
       </div>
 
+      {/* Banner Informativo Anti-Baneo WhatsApp */}
+      <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-xl text-amber-800 dark:text-amber-300 text-sm shadow-sm flex items-start gap-3">
+        <span className="text-xl leading-none">⚠️</span>
+        <div>
+          <h4 className="font-bold mb-1">IMPORTANTE - EVITAR BLOQUEOS Y BANEOS DE WHATSAPP</h4>
+          <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+            Para evitar que los algoritmos de WhatsApp marquen los mensajes automáticos como spam o restrinjan la línea del bot:
+            <strong className="block mt-1">
+              Todos los administradores registrados DEBEN guardar el número de celular del bot en la agenda de sus teléfonos móviles.
+            </strong>
+            Cuando el receptor tiene registrado el contacto remitente, el índice de confianza de la cuenta aumenta significativamente.
+          </p>
+        </div>
+      </div>
+
       {/* Tabla */}
       <ComponentCard title="Lista de Contactos WhatsApp">
         <DataTable

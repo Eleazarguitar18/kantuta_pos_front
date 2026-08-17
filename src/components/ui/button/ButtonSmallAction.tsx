@@ -37,7 +37,7 @@ const ButtonSmallAction: React.FC<ButtonProps> = ({
 
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 rounded-lg transition ${className} ${
+      className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg transition ${className} ${
         sizeClasses[size]
       } ${variantClasses[variant]} ${
         disabled ? "cursor-not-allowed opacity-50" : ""

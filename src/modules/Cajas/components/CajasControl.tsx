@@ -18,6 +18,8 @@ import axios from "axios";
 import { pdf } from "@react-pdf/renderer";
 import { MovimientosCajaPdf } from "../../../components/pdf/MovimientosCajaPdf";
 
+import Swal from "sweetalert2";
+
 const CajasControl = () => {
   // Core data
   const [caja, setCaja] = useState<Caja | null>(null);
@@ -100,8 +102,16 @@ const CajasControl = () => {
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);
       fetchCajaData();
-    } catch (error) {
-      setErrorMessage("Hubo un problema al abrir la sesión.");
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || "Hubo un problema al abrir la sesión.";
+      Swal.fire({
+        icon: "warning",
+        title: "Sesión ya activa",
+        text: typeof msg === "string" ? msg : "El usuario ya cuenta con una caja abierta.",
+        confirmButtonColor: "#3085d6",
+        confirmButtonText: "Entendido",
+      });
+      setErrorMessage(typeof msg === "string" ? msg : "Hubo un problema al abrir la sesión.");
       setShowError(true);
       setTimeout(() => setShowError(false), 3000);
     }
