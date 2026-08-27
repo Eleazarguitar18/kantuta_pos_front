@@ -37,8 +37,9 @@ const AppHeader: React.FC = () => {
       try {
         const response = await CajasService.getSesionBalance(sesionActiva.id);
         console.log("Balance actual: ", response.data);
-        if (response && response.data) {
-          setSaldoActual(Number(response.data));
+        if (response && response.data !== undefined && response.data !== null) {
+          const val = typeof response.data === "object" ? response.data.monto_final_teorico ?? response.data : response.data;
+          setSaldoActual(Number(val) || 0);
         }
       } catch (err) {
         console.error("Error fetching active balance", err);
@@ -47,6 +48,10 @@ const AppHeader: React.FC = () => {
       setSaldoActual(null);
     }
   };
+
+  useEffect(() => {
+    checkSesion();
+  }, []);
 
   useEffect(() => {
     fetchBalance();
@@ -64,11 +69,7 @@ const AppHeader: React.FC = () => {
           data.action === "CAJA_ABIERTA" ||
           data.action === "CAJA_CERRADA"
         ) {
-          // Si el evento fue de apertura o cierre, obligamos al Context a verificar el estado de la sesión
-          if (data.action === "CAJA_ABIERTA" || data.action === "CAJA_CERRADA") {
-            await checkSesion();
-          }
-
+          await checkSesion();
           fetchBalance();
         }
       }
@@ -78,7 +79,7 @@ const AppHeader: React.FC = () => {
     return () => {
       socket.off("dataChanged", handleDataChanged);
     };
-  }, [socket, sesionActiva, checkSesion]); // <-- Añadido checkSesion a las dependencias
+  }, [socket, checkSesion]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -120,20 +121,23 @@ const AppHeader: React.FC = () => {
           </Link>
 
           {/* Caja Activa badge + Terminar Turno */}
-          {sesionActiva && saldoActual !== null && (
+          {sesionActiva && (
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-900 rounded-full text-xs font-semibold text-green-700 dark:text-green-400 animate-pulse">
                 <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                <span>Caja Activa: {cajaActiva?.nombre || `#${sesionActiva.id_caja}`} - Bs. {saldoActual.toFixed(2)}</span>
+                <span>
+                  Caja Activa: {cajaActiva?.nombre || `#${sesionActiva.id_caja}`}
+                  {saldoActual !== null && !isNaN(saldoActual) ? ` - Bs. ${saldoActual.toFixed(2)}` : ""}
+                </span>
               </div>
               <button
                 onClick={() => navigate(`/cajas/control/${sesionActiva.id_caja}`)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-full text-xs font-semibold text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/60 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-full text-xs font-semibold text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/60 transition-colors shadow-sm cursor-pointer"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
-                Terminar Turno
+                Terminar Turno / Cerrar Caja
               </button>
             </div>
           )}

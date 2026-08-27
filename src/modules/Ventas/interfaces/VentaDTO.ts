@@ -5,11 +5,11 @@ export interface DetalleVentaInput {
 }
 
 export interface CrearVentaRequest {
-  metodo_pago: "EFECTIVO" | "QR" | "TRANSFERENCIA";
+  metodo_pago: "EFECTIVO" | "QR" | "TRANSFERENCIA" | "CUENTA_POR_COBRAR";
+  cliente_nombre?: string;
   id_sesion_caja: number;
   detalles: DetalleVentaInput[];
   id_user_create: number;
-  // total: number;
 }
 
 export interface ActualizarVentaRequest {

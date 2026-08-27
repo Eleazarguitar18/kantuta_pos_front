@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { BoxIcon, TrashBinIcon } from "../../../icons";
 import { useCaja } from "../../../context/CajaContext";
@@ -25,9 +25,11 @@ const PuntoDeVenta = () => {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [filteredProductos, setFilteredProductos] = useState<Producto[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("Todos");
 
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [metodoPago, setMetodoPago] = useState<"EFECTIVO" | "QR" | "TRANSFERENCIA">("EFECTIVO");
+  const [metodoPago, setMetodoPago] = useState<"EFECTIVO" | "QR" | "TRANSFERENCIA" | "CUENTA_POR_COBRAR">("EFECTIVO");
+  const [clienteNombre, setClienteNombre] = useState<string>("");
   const { sesionActiva, loading: loadingCaja } = useCaja();
   const { isOpen, openModal, closeModal } = useModal();
   const [createdVenta, setCreatedVenta] = useState<any | null>(null);
@@ -43,7 +45,6 @@ const PuntoDeVenta = () => {
     try {
       const response = await ProductosService.getProducts();
       setProductos(response.data);
-      setFilteredProductos(response.data);
     } catch (error) {
       console.error("Error al obtener productos:", error);
     }
@@ -67,16 +68,40 @@ const PuntoDeVenta = () => {
     };
   }, [socket, fetchProductos]);
 
+  // Lista única de categorías
+  const categoriesList = useMemo(() => {
+    const preset = ["Todos", "Chips", "Tarjetas", "Cargadores", "Audífonos", "Accesorios"];
+    const dynamic = Array.from(
+      new Set(
+        productos
+          .map((p) => p.categoria?.nombre)
+          .filter((cat): cat is string => Boolean(cat))
+      )
+    );
+    return Array.from(new Set([...preset, ...dynamic]));
+  }, [productos]);
+
   useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setFilteredProductos(productos);
-    } else {
+    let result = productos;
+
+    if (selectedCategory !== "Todos") {
+      const catLower = selectedCategory.toLowerCase();
+      result = result.filter((p) => {
+        const nombreCat = p.categoria?.nombre?.toLowerCase() || "";
+        const nombreProd = p.nombre.toLowerCase();
+        return nombreCat.includes(catLower) || nombreProd.includes(catLower);
+      });
+    }
+
+    if (searchTerm.trim() !== "") {
       const lower = searchTerm.toLowerCase();
-      setFilteredProductos(
-        productos.filter((p) => p.nombre.toLowerCase().includes(lower) || p.codigo_barras?.includes(lower))
+      result = result.filter(
+        (p) => p.nombre.toLowerCase().includes(lower) || p.codigo_barras?.includes(lower)
       );
     }
-  }, [searchTerm, productos]);
+
+    setFilteredProductos(result);
+  }, [searchTerm, selectedCategory, productos]);
 
   const addToCart = (producto: Producto) => {
     const existing = cart.find(c => c.id_producto === producto.id);
@@ -190,9 +215,20 @@ const PuntoDeVenta = () => {
     if (cart.length === 0) return alert("El carrito está vacío.");
     if (!sesionActiva) return alert("Debe tener una sesión de caja activa abierta para procesar la venta.");
 
+    if (metodoPago === "CUENTA_POR_COBRAR" && !clienteNombre.trim()) {
+      Swal.fire({
+        title: "Cliente Requerido",
+        text: "Debe ingresar el nombre del cliente para registrar una Cuenta por Cobrar (Venta Fiada).",
+        icon: "warning",
+        confirmButtonColor: "#3085d6",
+      });
+      return;
+    }
+
     try {
       const payload: CrearVentaRequest = {
         metodo_pago: metodoPago,
+        cliente_nombre: metodoPago === "CUENTA_POR_COBRAR" ? clienteNombre.trim() : undefined,
         id_sesion_caja: sesionActiva.id,
         detalles: cart.map(({ id_producto, cantidad, precio_unitario }) => ({
           id_producto,
@@ -200,7 +236,6 @@ const PuntoDeVenta = () => {
           precio_unitario: Number(precio_unitario) || 0
         })),
         id_user_create: user?.id || 0,
-        // total: total,
       };
 
       const response = await VentasService.createVenta(payload);
@@ -320,7 +355,28 @@ const PuntoDeVenta = () => {
 
         {/* Lado Izquierdo: Buscador y Lista de Productos */}
         <div className="lg:w-1/2 flex flex-col space-y-4">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-theme-sm border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-theme-sm border border-gray-200 dark:border-gray-700 space-y-3">
+            {/* Horizontal Category Pills Bar */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
+              {categoriesList.map((cat) => {
+                const isActive = selectedCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                      isActive
+                        ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
+                        : "bg-gray-100 dark:bg-gray-700/60 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                 <BoxIcon className="w-5 h-5" color="currentColor" />
@@ -476,12 +532,31 @@ const PuntoDeVenta = () => {
                   options={[
                     { value: "EFECTIVO", label: "Efectivo" },
                     { value: "QR", label: "Pago QR / Transferencia" },
-                    { value: "TRANSFERENCIA", label: "Transferencia Bancaria" }
+                    { value: "TRANSFERENCIA", label: "Transferencia Bancaria" },
+                    { value: "CUENTA_POR_COBRAR", label: "Cuenta por Cobrar / Fiado" },
                   ]}
                   onChange={(v) => setMetodoPago(v as any)}
                   defaultValue={metodoPago}
                 />
               </div>
+
+              {metodoPago === "CUENTA_POR_COBRAR" && (
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl space-y-2">
+                  <Label className="text-amber-800 dark:text-amber-300 font-semibold text-xs">
+                    Nombre del Cliente / Deudor (Obligatorio)
+                  </Label>
+                  <input
+                    type="text"
+                    placeholder="Ej. Juan Pérez - Tel: 77712345"
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-amber-300 dark:border-amber-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    value={clienteNombre}
+                    onChange={(e) => setClienteNombre(e.target.value)}
+                  />
+                  <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                    * Esta venta se registrará como pendiente de cobro y no afectará el dinero físico de caja de inmediato.
+                  </p>
+                </div>
+              )}
               <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
                 <p className="text-xs text-blue-700 dark:text-blue-400">
                   <span className="font-semibold">Caja Activa:</span> {sesionActiva.caja?.nombre || `Caja #${sesionActiva.id_caja}`} (Sesión #{sesionActiva.id})

@@ -34,8 +34,10 @@ import CajasMain from "./modules/Cajas/components/CajasMain";
 import CajasRegister from "./modules/Cajas/components/CajasRegister";
 import CajasEdit from "./modules/Cajas/components/CajasEdit";
 import CajasControl from "./modules/Cajas/components/CajasControl";
+import PrestamosMain from "./modules/Cajas/components/PrestamosMain";
 import VentasMain from "./modules/Ventas/components/VentasMain";
 import PuntoDeVenta from "./modules/Ventas/components/PuntoDeVenta";
+import CuentasPorCobrarMain from "./modules/Ventas/components/CuentasPorCobrarMain";
 import UsuariosMain from "./modules/Administracion/Usuarios/components/UsuariosMain";
 import UsuariosRegister from "./modules/Administracion/Usuarios/components/UsuariosRegister";
 import RecargasOperacion from "./modules/Recargas/pages/RecargasOperacion";
@@ -90,6 +92,7 @@ export default function App() {
                 <Route path="/cajas">
                   <Route index element={<CajasMain />} />
                   <Route path="control/:id" element={<CajasControl />} />
+                  <Route path="prestamos" element={<PrestamosMain />} />
                   <Route element={<ProtectedRoute allowedRoles={['Administrador']} />}>
                     <Route path="registrar" element={<CajasRegister />} />
                     <Route path="editar/:id" element={<CajasEdit />} />
@@ -100,6 +103,7 @@ export default function App() {
                 <Route path="/ventas">
                   <Route index element={<VentasMain />} />
                   <Route path="pos" element={<PuntoDeVenta />} />
+                  <Route path="cuentas-por-cobrar" element={<CuentasPorCobrarMain />} />
                 </Route>
 
                 {/* Recargas */}

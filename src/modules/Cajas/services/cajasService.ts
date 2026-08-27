@@ -85,4 +85,14 @@ export const CajasService = {
       headers: getHeaders(),
     });
   },
+  async getResumenInventario() {
+    return await axios.get(`${API_BASE_URL}/cajas/resumen-inventario`, {
+      headers: getHeaders(),
+    });
+  },
+  async getEstadoInventario() {
+    return await axios.get(`${API_BASE_URL}/cajas/estado-inventario`, {
+      headers: getHeaders(),
+    });
+  },
 };

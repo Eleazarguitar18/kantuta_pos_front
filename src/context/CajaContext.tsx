@@ -12,8 +12,8 @@ interface CajaContextType {
   cajaActiva: CajaActivaInfo | null;
   loading: boolean;
   checkSesion: () => Promise<void>;
-  abrirCaja: (idCaja: number, montoInicial: number) => Promise<any>;
-  cerrarCaja: (montoFinalReal: number, idSesion?: number) => Promise<any>;
+  abrirCaja: (idCaja: number, montoInicial: number, desgloseArqueo?: any) => Promise<any>;
+  cerrarCaja: (montoFinalReal: number, idSesion?: number, desgloseArqueo?: any) => Promise<any>;
 }
 
 const CajaContext = createContext<CajaContextType | undefined>(undefined);
@@ -80,7 +80,7 @@ export const CajaProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkSesion();
   }, [user]);
 
-  const abrirCaja = async (idCaja: number, montoInicial: number) => {
+  const abrirCaja = async (idCaja: number, montoInicial: number, desgloseArqueo?: any) => {
     console.log("montoInicial", montoInicial);
     console.log("idCaja", idCaja);
     if (!user) return;
@@ -89,6 +89,7 @@ export const CajaProvider: React.FC<{ children: React.ReactNode }> = ({ children
       monto_inicial: Number(montoInicial),
       id_usuario: user.id,
       id_user_create: user.id,
+      desglose_arqueo: desgloseArqueo,
     });
     // console.log("response", response);
     const data = response.data;
@@ -111,12 +112,13 @@ export const CajaProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return data;
   };
 
-  const cerrarCaja = async (montoFinalReal: number, idSesion?: number) => {
+  const cerrarCaja = async (montoFinalReal: number, idSesion?: number, desgloseArqueo?: any) => {
     const targetId = idSesion || sesionActiva?.id;
     if (!targetId || !user) return;
     const response = await CajasService.cerrarSesion(targetId, {
       monto_final_real: montoFinalReal,
       id_user_update: user.id,
+      desglose_arqueo: desgloseArqueo,
     });
     setSesionActiva(null);
     setCajaActiva(null);

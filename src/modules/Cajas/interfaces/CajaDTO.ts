@@ -10,11 +10,13 @@ export interface AbrirCajaRequest {
   monto_inicial: number;
   id_usuario: number;
   id_user_create: number;
+  desglose_arqueo?: any;
 }
 
 export interface CerrarCajaRequest {
   monto_final_real: number;
   id_user_update: number;
+  desglose_arqueo?: any;
 }
 
 export interface CrearMovimientoRequest {
