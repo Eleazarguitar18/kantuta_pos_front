@@ -25,6 +25,7 @@ interface PrestamoCaja {
 export const PrestamosMain: React.FC = () => {
   const [prestamos, setPrestamos] = useState<PrestamoCaja[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Form state
   const [monto, setMonto] = useState<number>(0);
@@ -92,6 +93,7 @@ export const PrestamosMain: React.FC = () => {
     }
 
     try {
+      setIsSubmitting(true);
       await axios.post(
         `${API_BASE_URL}/cajas/prestamos`,
         {
@@ -121,6 +123,8 @@ export const PrestamosMain: React.FC = () => {
         title: 'Error al Registrar',
         text: typeof msg === 'string' ? msg : JSON.stringify(msg),
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -228,10 +232,10 @@ export const PrestamosMain: React.FC = () => {
                   !sesionActiva ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
                 onClick={() => handleCrearPrestamo()}
-                disabled={!sesionActiva}
+                disabled={!sesionActiva || isSubmitting}
               >
+                {isSubmitting ? "Guardando..." : "Registrar Salida de Efectivo"}
                 <ArrowDownRight className="w-5 h-5 mr-1" />
-                Registrar Salida de Efectivo
               </Button>
             </form>
           </ComponentCard>
