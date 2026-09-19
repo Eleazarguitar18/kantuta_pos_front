@@ -20,8 +20,12 @@ export interface ProductoEstado {
 interface ArqueoCajaAccordionProps {
   modo?: 'apertura' | 'cierre';
   teoricoCalculado: number;
+  saldoInicial?: number;
   totalIngresos?: number;
   totalEgresos?: number;
+  totalVentasEfectivo?: number;
+  totalCobros?: number;
+  totalPrestamos?: number;
   onConfirmarCierre?: (montoFinalReal: number, desgloseArqueo: any) => void;
   onConfirmar?: (montoFinalReal: number, desgloseArqueo: any) => void;
   onCancelar?: () => void;
@@ -35,8 +39,12 @@ export const formatMonto = (val: any): string => {
 export const ArqueoCajaAccordion: React.FC<ArqueoCajaAccordionProps> = ({
   modo = 'cierre',
   teoricoCalculado,
+  saldoInicial = 0,
   totalIngresos = 0,
   totalEgresos = 0,
+  totalVentasEfectivo = 0,
+  totalCobros = 0,
+  totalPrestamos = 0,
   onConfirmarCierre,
   onConfirmar,
   onCancelar,
@@ -45,8 +53,68 @@ export const ArqueoCajaAccordion: React.FC<ArqueoCajaAccordionProps> = ({
   const fechaActual = useMemo(() => new Date().toLocaleDateString('es-BO'), []);
   const horaActual = useMemo(() => new Date().toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }), []);
 
-  // 1. Efectivo Global en Caja (sin desglose de billetes, parseo defensivo a number)
-  const [efectivoTotal, setEfectivoTotal] = useState<number>(Number(teoricoCalculado) || 0);
+  // Monto real físico ingresado por el cajero (conteo de efectivo)
+  const [montoRealFisico, setMontoRealFisico] = useState<number | ''>('');
+  const [observacion, setObservacion] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Saldo esperado calculado por el sistema (solo lectura)
+  const saldoEsperado = useMemo(() => Number(teoricoCalculado) || 0, [teoricoCalculado]);
+
+  // Diferencia en tiempo real: monto_real_fisico - saldo_esperado
+  const montoDiferencia = useMemo(() => {
+    if (montoRealFisico === '' || montoRealFisico < 0) return null;
+    return Number(montoRealFisico) - saldoEsperado;
+  }, [montoRealFisico, saldoEsperado]);
+
+  // Estado del arqueo según la diferencia
+  const estadoArqueo = useMemo((): 'CUADRADO' | 'SOBRANTE' | 'FALTANTE' | null => {
+    if (montoDiferencia === null) return null;
+    if (Math.abs(montoDiferencia) < 0.01) return 'CUADRADO';
+    return montoDiferencia > 0 ? 'SOBRANTE' : 'FALTANTE';
+  }, [montoDiferencia]);
+
+  // Estilos de color según el estado del arqueo
+  const colorDiferencia = useMemo(() => {
+    if (!estadoArqueo) return 'text-gray-400';
+    switch (estadoArqueo) {
+      case 'CUADRADO':
+        return 'text-emerald-600 dark:text-emerald-400';
+      case 'SOBRANTE':
+        return 'text-blue-600 dark:text-blue-400';
+      case 'FALTANTE':
+        return 'text-rose-600 dark:text-rose-400';
+    }
+  }, [estadoArqueo]);
+
+  const bgDiferencia = useMemo(() => {
+    if (!estadoArqueo) return 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700';
+    switch (estadoArqueo) {
+      case 'CUADRADO':
+        return 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-700';
+      case 'SOBRANTE':
+        return 'bg-blue-50 dark:bg-blue-950/20 border-blue-300 dark:border-blue-700';
+      case 'FALTANTE':
+        return 'bg-rose-50 dark:bg-rose-950/20 border-rose-300 dark:border-rose-700';
+    }
+  }, [estadoArqueo]);
+
+  const badgeDiferencia = useMemo(() => {
+    if (!estadoArqueo) return null;
+    switch (estadoArqueo) {
+      case 'CUADRADO':
+        return { label: '✅ Cuadrado', bg: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' };
+      case 'SOBRANTE':
+        return { label: '🔵 Sobrante', bg: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' };
+      case 'FALTANTE':
+        return { label: '🔴 Faltante', bg: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300' };
+    }
+  }, [estadoArqueo]);
+
+  // Botón deshabilitado si el campo de efectivo real está vacío o es menor a 0
+  const isConfirmDisabled = useMemo(() => {
+    return montoRealFisico === '' || Number(montoRealFisico) < 0 || isSubmitting;
+  }, [montoRealFisico, isSubmitting]);
 
   // Estado de acordeones principales
   const [openSections, setOpenSections] = useState({
@@ -78,8 +146,6 @@ export const ArqueoCajaAccordion: React.FC<ArqueoCajaAccordionProps> = ({
 
   // Carga de inventario general desde endpoint NestJS
   useEffect(() => {
-    setEfectivoTotal(teoricoCalculado || 0);
-
     const fetchInventario = async () => {
       try {
         const response = await CajasService.getEstadoInventario();
@@ -215,32 +281,37 @@ export const ArqueoCajaAccordion: React.FC<ArqueoCajaAccordionProps> = ({
     return { cargadores, audifonos, cables, otros };
   }, [productosBD]);
 
-  // Cálculos del Sticky Footer
-  const diferencia = useMemo(() => {
-    const numEfectivo = Number(efectivoTotal) || 0;
-    const numTeorico = Number(teoricoCalculado) || 0;
-    return numEfectivo - numTeorico;
-  }, [efectivoTotal, teoricoCalculado]);
+  const handleSubmit = async () => {
+    if (isConfirmDisabled) return;
+    setIsSubmitting(true);
 
-  const handleInputChange = (key: string, val: number) => {
-    setConteoFisico((prev) => ({ ...prev, [key]: val }));
-  };
-
-  const handleSubmit = () => {
     const desglose = {
-      efectivoTotal: Number(efectivoTotal) || 0,
+      efectivoTotal: Number(montoRealFisico) || 0,
+      monto_real_fisico: Number(montoRealFisico) || 0,
+      monto_diferencia: montoDiferencia ?? 0,
+      estado_arqueo: estadoArqueo ?? 'FALTANTE',
+      observacion: observacion || undefined,
+      saldo_esperado: saldoEsperado,
       conteoFisico,
       fecha: fechaActual,
       hora: horaActual,
       operador: user?.name || user?.email || 'Operador',
-      diferencia,
+      diferencia: montoDiferencia ?? 0,
     };
 
-    if (onConfirmar) {
-      onConfirmar(Number(efectivoTotal) || 0, desglose);
-    } else if (onConfirmarCierre) {
-      onConfirmarCierre(Number(efectivoTotal) || 0, desglose);
+    try {
+      if (onConfirmar) {
+        await onConfirmar(Number(montoRealFisico) || 0, desglose);
+      } else if (onConfirmarCierre) {
+        await onConfirmarCierre(Number(montoRealFisico) || 0, desglose);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const handleInputChange = (key: string, val: number) => {
+    setConteoFisico((prev) => ({ ...prev, [key]: val }));
   };
 
   return (
@@ -272,30 +343,115 @@ export const ArqueoCajaAccordion: React.FC<ArqueoCajaAccordionProps> = ({
           </div>
         </div>
 
-        {/* INPUT DE EFECTIVO TOTAL GLOBAL */}
-        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <h4 className="font-bold text-emerald-900 dark:text-emerald-300 text-sm flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-emerald-600" />
-              Monto Global de Efectivo en Caja (Sin desglose de billetes)
+        {/* CAMPOS DE SOLO LECTURA: DESGLOSE DE TOTALES DEL SISTEMA */}
+        {modo === 'cierre' && (
+          <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700 space-y-3">
+            <h4 className="font-bold text-gray-700 dark:text-gray-300 text-sm flex items-center gap-2 mb-3">
+              🔒 Totales del Sistema (Solo Lectura)
             </h4>
-            <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">
-              Ingrese el efectivo total contado disponible físicamente en gaveta.
-            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                <p className="text-[11px] font-semibold text-gray-500 uppercase mb-1">Saldo Inicial</p>
+                <p className="text-sm font-bold text-gray-800 dark:text-gray-200">Bs. {formatMonto(saldoInicial)}</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                <p className="text-[11px] font-semibold text-gray-500 uppercase mb-1">Ventas Efectivo</p>
+                <p className="text-sm font-bold text-green-600 dark:text-green-400">Bs. {formatMonto(totalVentasEfectivo)}</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                <p className="text-[11px] font-semibold text-gray-500 uppercase mb-1">Cobros</p>
+                <p className="text-sm font-bold text-green-600 dark:text-green-400">Bs. {formatMonto(totalCobros)}</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                <p className="text-[11px] font-semibold text-gray-500 uppercase mb-1">Préstamos</p>
+                <p className="text-sm font-bold text-orange-600 dark:text-orange-400">Bs. {formatMonto(totalPrestamos)}</p>
+              </div>
+              <div className="bg-indigo-50 dark:bg-indigo-950/30 p-3 rounded-lg border-2 border-indigo-300 dark:border-indigo-700">
+                <p className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase mb-1">Saldo Esperado</p>
+                <p className="text-base font-extrabold text-indigo-700 dark:text-indigo-300">Bs. {formatMonto(saldoEsperado)}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                <p className="text-[11px] font-semibold text-gray-500 uppercase mb-1">Total Ingresos (+)</p>
+                <p className="text-sm font-bold text-green-600 dark:text-green-400">Bs. {formatMonto(totalIngresos)}</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                <p className="text-[11px] font-semibold text-gray-500 uppercase mb-1">Total Egresos (-)</p>
+                <p className="text-sm font-bold text-red-600 dark:text-red-400">Bs. {formatMonto(totalEgresos)}</p>
+              </div>
+            </div>
           </div>
-          <div className="w-full sm:w-56">
-            <Label className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">Efectivo Total (Bs.)</Label>
+        )}
+
+        {/* INPUT INTERACTIVO: EFECTIVO REAL EN CAJA (CONTEO FÍSICO) */}
+        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 space-y-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h4 className="font-bold text-emerald-900 dark:text-emerald-300 text-sm flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-emerald-600" />
+                Efectivo Real en Caja (Conteo Físico)
+              </h4>
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">
+                Ingrese el monto total de efectivo contado físicamente en la gaveta.
+              </p>
+            </div>
+            <div className="w-full sm:w-56">
+              <Label className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">Monto Contado (Bs.)</Label>
+              <Input
+                type="number"
+                step={0.10}
+                min="0"
+                value={montoRealFisico}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setMontoRealFisico(val === '' ? '' : parseFloat(val) || 0);
+                }}
+                className="text-right font-extrabold text-lg bg-white dark:bg-gray-900 text-emerald-700 dark:text-emerald-300 border-emerald-300 focus:ring-emerald-500"
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+
+          {/* RESULTADO DE LA DIFERENCIA EN TIEMPO REAL */}
+          {modo === 'cierre' && (
+            <div className={`p-4 rounded-xl border-2 ${bgDiferencia} transition-all duration-300`}>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Diferencia (Real - Esperado)</p>
+                    <p className={`text-xl font-extrabold ${colorDiferencia} transition-colors duration-300`}>
+                      {montoDiferencia !== null
+                        ? `${montoDiferencia >= 0 ? '+' : ''}Bs. ${formatMonto(montoDiferencia)}`
+                        : 'Ingrese el monto contado'}
+                    </p>
+                  </div>
+                </div>
+                {badgeDiferencia && (
+                  <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold ${badgeDiferencia.bg}`}>
+                    {badgeDiferencia.label}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* CAMPO DE OBSERVACIÓN OPCIONAL */}
+        {modo === 'cierre' && montoDiferencia !== null && Math.abs(montoDiferencia) >= 0.01 && (
+          <div className="bg-amber-50 dark:bg-amber-950/20 p-4 rounded-xl border border-amber-200 dark:border-amber-800">
+            <Label className="text-xs font-semibold text-amber-800 dark:text-amber-300">
+              Observación (opcional - justifique la diferencia)
+            </Label>
             <Input
-              type="number"
-              step={0.10}
-              min="0"
-              value={efectivoTotal}
-              onChange={(e) => setEfectivoTotal(parseFloat(e.target.value) || 0)}
-              className="text-right font-extrabold text-lg bg-white dark:bg-gray-900 text-emerald-700 dark:text-emerald-300 border-emerald-300 focus:ring-emerald-500"
-              placeholder="0.00"
+              type="text"
+              value={observacion}
+              onChange={(e) => setObservacion(e.target.value)}
+              placeholder="Ej: Vuelto pendiente de cliente, error de cambio, etc."
+              className="mt-1 bg-white dark:bg-gray-900 border-amber-300 focus:ring-amber-500"
             />
           </div>
-        </div>
+        )}
       </div>
 
       {/* 2. BLOQUES DESPLEGABLES DE INVENTARIO Y SALDOS */}
@@ -718,47 +874,58 @@ export const ArqueoCajaAccordion: React.FC<ArqueoCajaAccordionProps> = ({
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full md:w-auto text-center md:text-left">
             <div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Total Ingresos (+)</p>
-              <p className="text-base font-bold text-green-600 dark:text-green-400">
-                Bs. {formatMonto(totalIngresos)}
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Saldo Esperado</p>
+              <p className="text-base font-bold text-indigo-600 dark:text-indigo-400">
+                Bs. {formatMonto(saldoEsperado)}
               </p>
             </div>
             <div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Total Egresos (-)</p>
-              <p className="text-base font-bold text-red-600 dark:text-red-400">
-                Bs. {formatMonto(totalEgresos)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Efectivo Declarado</p>
-              <p className="text-base font-bold text-blue-600 dark:text-blue-400">
-                Bs. {formatMonto(efectivoTotal)}
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Efectivo Contado</p>
+              <p className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                {montoRealFisico !== '' ? `Bs. ${formatMonto(montoRealFisico)}` : '— Sin ingresar —'}
               </p>
             </div>
             <div>
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Diferencia</p>
-              <p
-                className={`text-base font-extrabold ${
-                  diferencia >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-                }`}
-              >
-                {diferencia >= 0 ? '+' : ''}Bs. {formatMonto(diferencia)}
+              <p className={`text-base font-extrabold ${colorDiferencia}`}>
+                {montoDiferencia !== null
+                  ? `${montoDiferencia >= 0 ? '+' : ''}Bs. ${formatMonto(montoDiferencia)}`
+                  : '—'}
               </p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Estado</p>
+              {badgeDiferencia ? (
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold mt-0.5 ${badgeDiferencia.bg}`}>
+                  {badgeDiferencia.label}
+                </span>
+              ) : (
+                <p className="text-base font-bold text-gray-400">— Pendiente —</p>
+              )}
             </div>
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto">
             {onCancelar && (
-              <Button variant="outline" className="w-full md:w-auto" onClick={onCancelar}>
+              <Button variant="outline" className="w-full md:w-auto" onClick={onCancelar} disabled={isSubmitting}>
                 Cancelar
               </Button>
             )}
             <Button
               variant="primary"
-              className="w-full md:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all"
+              className={`w-full md:w-auto font-bold py-3 px-6 rounded-xl shadow-lg transition-all ${
+                isConfirmDisabled
+                  ? 'bg-gray-400 cursor-not-allowed opacity-60'
+                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white hover:shadow-xl'
+              }`}
               onClick={handleSubmit}
+              disabled={isConfirmDisabled}
             >
-              {modo === 'apertura' ? 'Confirmar y Guardar Apertura' : 'Confirmar y Cerrar Caja'}
+              {isSubmitting
+                ? '⏳ Procesando...'
+                : modo === 'apertura'
+                  ? 'Confirmar y Guardar Apertura'
+                  : 'Confirmar y Cerrar Caja'}
             </Button>
           </div>
         </div>

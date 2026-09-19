@@ -15,6 +15,10 @@ export interface AbrirCajaRequest {
 
 export interface CerrarCajaRequest {
   monto_final_real: number;
+  monto_real_fisico: number;
+  monto_diferencia: number;
+  estado_arqueo: "CUADRADO" | "SOBRANTE" | "FALTANTE";
+  observacion?: string;
   id_user_update: number;
   desglose_arqueo?: any;
 }

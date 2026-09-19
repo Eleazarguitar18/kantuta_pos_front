@@ -21,7 +21,7 @@ import {
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
 import Logo from "../components/common/Logo";
-import { Smartphone } from "lucide-react";
+import { Smartphone, Building2 } from "lucide-react";
 
 type NavItem = {
   name: string;
@@ -60,6 +60,13 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Gestión de Cajas", path: "/cajas", pro: false },
       { name: "Préstamos / Salidas", path: "/cajas/prestamos", pro: false },
+    ],
+  },
+  {
+    icon: <Building2 className="w-5 h-5 text-gray-500" />,
+    name: "Agentes - Banco",
+    subItems: [
+      { name: "Balance y Operadores", path: "/agentes", pro: false },
     ],
   },
   {

@@ -8,7 +8,6 @@ import Label from '../../../components/form/Label';
 import Input from '../../../components/form/input/InputField';
 import { useCaja } from '../../../context/CajaContext';
 import { useAuth } from '../../../context/auth/AuthContext';
-import { useSocket } from '../../../context/SocketContext';
 import Swal from 'sweetalert2';
 import { HandCoins, ArrowDownRight, ArrowUpRight, CheckCircle2, Clock } from 'lucide-react';
 
@@ -25,6 +24,8 @@ interface PrestamoCaja {
 export const PrestamosMain: React.FC = () => {
   const [prestamos, setPrestamos] = useState<PrestamoCaja[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isProcessingPago, setIsProcessingPago] = useState<boolean>(false);
 
   // Form state
   const [monto, setMonto] = useState<number>(0);
@@ -32,7 +33,6 @@ export const PrestamosMain: React.FC = () => {
 
   const { sesionActiva } = useCaja();
   const { user } = useAuth();
-  const socket = useSocket();
 
   const getHeaders = () => ({
     'Content-Type': 'application/json',
@@ -57,20 +57,9 @@ export const PrestamosMain: React.FC = () => {
     fetchPrestamos();
   }, [fetchPrestamos]);
 
-  useEffect(() => {
-    const handleDataChanged = (data: { entity: string; action: string }) => {
-      if (data.entity === 'caja') {
-        fetchPrestamos();
-      }
-    };
-    socket.on('dataChanged', handleDataChanged);
-    return () => {
-      socket.off('dataChanged', handleDataChanged);
-    };
-  }, [socket, fetchPrestamos]);
-
   const handleCrearPrestamo = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (isSubmitting) return; // Evita peticiones duplicadas por doble click
     if (!sesionActiva) {
       Swal.fire({
         icon: 'warning',
@@ -91,6 +80,7 @@ export const PrestamosMain: React.FC = () => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await axios.post(
         `${API_BASE_URL}/cajas/prestamos`,
@@ -113,7 +103,8 @@ export const PrestamosMain: React.FC = () => {
 
       setMonto(0);
       setMotivo('');
-      fetchPrestamos();
+      // Único refetch: se ejecuta solo cuando la mutación fue exitosa
+      await fetchPrestamos();
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Error al registrar el préstamo.';
       Swal.fire({
@@ -121,10 +112,13 @@ export const PrestamosMain: React.FC = () => {
         title: 'Error al Registrar',
         text: typeof msg === 'string' ? msg : JSON.stringify(msg),
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDevolverPrestamo = async (prestamo: PrestamoCaja) => {
+    if (isProcessingPago) return; // Evita peticiones duplicadas por doble click
     if (!sesionActiva) {
       Swal.fire({
         icon: 'warning',
@@ -148,6 +142,7 @@ export const PrestamosMain: React.FC = () => {
 
     if (!confirm.isConfirmed) return;
 
+    setIsProcessingPago(true);
     try {
       await axios.post(
         `${API_BASE_URL}/cajas/prestamos/${prestamo.id}/pagar`,
@@ -166,7 +161,8 @@ export const PrestamosMain: React.FC = () => {
         showConfirmButton: false,
       });
 
-      fetchPrestamos();
+      // Único refetch: se ejecuta solo cuando la mutación fue exitosa
+      await fetchPrestamos();
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Error al devolver el dinero.';
       Swal.fire({
@@ -174,6 +170,8 @@ export const PrestamosMain: React.FC = () => {
         title: 'Error al Devolver',
         text: typeof msg === 'string' ? msg : JSON.stringify(msg),
       });
+    } finally {
+      setIsProcessingPago(false);
     }
   };
 
@@ -222,16 +220,17 @@ export const PrestamosMain: React.FC = () => {
                 </div>
               </div>
 
+              {/* Sin onClick: el envío lo maneja exclusivamente el onSubmit del formulario
+                  (el botón es type submit implícito; el onClick duplicaba la petición) */}
               <Button
                 variant="primary"
                 className={`w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-bold py-3 ${
-                  !sesionActiva ? 'opacity-50 cursor-not-allowed' : ''
+                  !sesionActiva || isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
-                onClick={() => handleCrearPrestamo()}
-                disabled={!sesionActiva}
+                disabled={!sesionActiva || isSubmitting}
               >
                 <ArrowDownRight className="w-5 h-5 mr-1" />
-                Registrar Salida de Efectivo
+                {isSubmitting ? 'Registrando...' : 'Registrar Salida de Efectivo'}
               </Button>
             </form>
           </ComponentCard>
@@ -320,6 +319,7 @@ export const PrestamosMain: React.FC = () => {
                           variant="primary"
                           className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 font-bold rounded-lg shadow-sm flex items-center justify-center gap-1 mx-auto"
                           onClick={() => handleDevolverPrestamo(p)}
+                          disabled={isProcessingPago}
                         >
                           <ArrowUpRight className="w-4 h-4" />
                           Pagar / Devolver Dinero

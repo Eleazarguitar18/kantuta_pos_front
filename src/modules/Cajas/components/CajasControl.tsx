@@ -270,6 +270,7 @@ const CajasControl = () => {
                 ) : (
                   <ArqueoCajaErrorBoundary
                     teoricoCalculado={montoFinalReal}
+                    saldoInicial={Number(sesionActiva.monto_inicial)}
                     totalIngresos={totalIngresos}
                     totalEgresos={totalEgresos}
                     onConfirmarCierre={handleConfirmarArqueo}

@@ -117,6 +117,10 @@ export const CajaProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!targetId || !user) return;
     const response = await CajasService.cerrarSesion(targetId, {
       monto_final_real: montoFinalReal,
+      monto_real_fisico: Number(desgloseArqueo?.monto_real_fisico ?? montoFinalReal),
+      monto_diferencia: Number(desgloseArqueo?.monto_diferencia ?? 0),
+      estado_arqueo: desgloseArqueo?.estado_arqueo ?? 'CUADRADO',
+      observacion: desgloseArqueo?.observacion,
       id_user_update: user.id,
       desglose_arqueo: desgloseArqueo,
     });

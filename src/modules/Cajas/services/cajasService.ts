@@ -63,9 +63,18 @@ export const CajasService = {
   },
   async cerrarSesion(id_sesion: number, data: CerrarCajaRequest) {
     data.id_user_update = getUserId();
+    const payload: CerrarCajaRequest = {
+      monto_final_real: data.monto_final_real,
+      monto_real_fisico: data.monto_real_fisico,
+      monto_diferencia: data.monto_diferencia,
+      estado_arqueo: data.estado_arqueo,
+      observacion: data.observacion,
+      id_user_update: data.id_user_update,
+      desglose_arqueo: data.desglose_arqueo,
+    };
     return await axios.patch(
       `${API_BASE_URL}/cajas/sesion/${id_sesion}/cerrar`,
-      data,
+      payload,
       {
         headers: getHeaders(),
       },
