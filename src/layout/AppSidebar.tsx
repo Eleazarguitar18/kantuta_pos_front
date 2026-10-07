@@ -60,6 +60,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Gestión de Cajas", path: "/cajas", pro: false },
       { name: "Préstamos / Salidas", path: "/cajas/prestamos", pro: false },
+      { name: "Deudas y Responsabilidades", path: "/cajas/responsabilidades", pro: false },
     ],
   },
   {
@@ -108,19 +109,35 @@ const othersItems: NavItem[] = [];
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
-  const { isOperator } = useRole();
+  const { isOperator, isAdmin } = useRole();
 
   // Filtramos el menú de navegación según el rol del usuario
-  const filteredNavItems = navItems.filter((item) => {
-    if (isOperator) {
-      // Al operador le bloqueamos la administración y los reportes generales
-      const modulosProhibidos = ["Administración", "Reportes"];
-      if (modulosProhibidos.includes(item.name)) {
-        return false;
+  const filteredNavItems = navItems
+    .map((item) => {
+      // Filtrar subitems exclusivos de admin
+      if (item.name === "Cajas") {
+        return {
+          ...item,
+          subItems: item.subItems?.filter((sub) => {
+            if (sub.path === "/cajas/responsabilidades") {
+              return isAdmin;
+            }
+            return true;
+          }),
+        };
       }
-    }
-    return true;
-  });
+      return item;
+    })
+    .filter((item) => {
+      if (isOperator) {
+        // Al operador le bloqueamos la administración y los reportes generales
+        const modulosProhibidos = ["Administración", "Reportes"];
+        if (modulosProhibidos.includes(item.name)) {
+          return false;
+        }
+      }
+      return true;
+    });
 
   const [openSubmenu, setOpenSubmenu] = useState<{
     type: "main" | "others";
