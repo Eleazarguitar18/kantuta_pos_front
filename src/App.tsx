@@ -53,6 +53,7 @@ import ReporteInventario from "./modules/Reportes/components/ReporteInventario";
 import ReporteProductividad from "./modules/Reportes/components/ReporteProductividad";
 import WhatsAppMain from "./modules/WhatsApp/pages/WhatsAppMain";
 import NotificacionesMain from "./modules/Administracion/Notificaciones/components/NotificacionesMain";
+import PrestamosExternosPage from "./modules/PrestamosExternos/pages/PrestamosExternosPage";
 import { Toaster } from "react-hot-toast";
 
 export default function App() {
@@ -101,6 +102,9 @@ export default function App() {
                     <Route path="editar/:id" element={<CajasEdit />} />
                   </Route>
                 </Route>
+
+                {/* Préstamos Externos */}
+                <Route path="/prestamos-externos" element={<PrestamosExternosPage />} />
 
                 {/* Agentes - Banco */}
                 <Route path="/agentes">

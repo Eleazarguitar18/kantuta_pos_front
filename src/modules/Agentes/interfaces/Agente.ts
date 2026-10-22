@@ -76,6 +76,16 @@ export interface TransaccionAgente extends BaseEntityAudit {
   motivo: string;
   fecha: string;
   id_sesion_caja?: number;
+  fecha_devolucion?: string;
+  persona_llevo?: string;
+  persona_que_llevo?: string;
+  persona_devolvio?: string;
+  persona_que_devolvio?: string;
+  monto_devuelto?: number;
+  saldo_pendiente?: number;
+  monto_pendiente?: number;
+  estado_devolucion?: 'PENDIENTE' | 'COMPLETO' | string;
+  observacion_devolucion?: string;
 }
 
 export interface RegistrarTransaccionAgenteDTO {
@@ -92,5 +102,6 @@ export interface RegistrarTransaccionAgenteDTO {
   motivo?: string;
   observacion?: string;
   nombre_operador?: string;
+  persona_llevo?: string;
   id_user_create?: number;
 }

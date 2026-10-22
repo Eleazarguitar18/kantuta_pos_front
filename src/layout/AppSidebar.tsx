@@ -60,6 +60,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Gestión de Cajas", path: "/cajas", pro: false },
       { name: "Préstamos / Salidas", path: "/cajas/prestamos", pro: false },
+      { name: "Préstamos Externos", path: "/prestamos-externos", pro: false },
       { name: "Deudas y Responsabilidades", path: "/cajas/responsabilidades", pro: false },
     ],
   },

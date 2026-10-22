@@ -17,10 +17,9 @@ import { API_BASE_URL } from "../../../components/auth/services/urlBase";
 import axios from "axios";
 import { pdf } from "@react-pdf/renderer";
 import { MovimientosCajaPdf } from "../../../components/pdf/MovimientosCajaPdf";
-import { ArqueoCajaAccordion, ArqueoCajaErrorBoundary } from "./ArqueoCajaAccordion";
 import { Modal } from "../../../components/ui/modal";
 import SeccionArqueoBilletes from "./SeccionArqueoBilletes";
-import TablaResumenStockApertura, { ItemStock } from "./TablaResumenStockApertura";
+import InventarioPorCategorias, { ItemStock } from "./InventarioPorCategorias";
 
 import Swal from "sweetalert2";
 
@@ -359,7 +358,7 @@ const CajasControl = () => {
                     </div>
                     
                     <SeccionArqueoBilletes onChangeTotal={(total, valores) => { setMontoFisicoCalculado(total); setValoresArqueo(valores); }} disabled={isSubmitting} />
-                    <TablaResumenStockApertura onStockChange={(items, obs) => { setStockItems(items); setObservacionStock(obs); }} disabled={isSubmitting} />
+                    <InventarioPorCategorias modo="cierre" onStockChange={(items, obs) => { setStockItems(items); setObservacionStock(obs); }} disabled={isSubmitting} />
                     
                     {(Math.abs(montoFisicoCalculado - montoFinalReal) >= 0.01 || stockItems.some(i => i.diferencia !== 0)) && (
                       <div className="p-4 rounded-xl border-2 bg-red-50 dark:bg-red-950/20 border-red-300 dark:border-red-700">
@@ -420,7 +419,7 @@ const CajasControl = () => {
                     </div>
                     
                     <SeccionArqueoBilletes onChangeTotal={(total, valores) => { setMontoFisicoCalculado(total); setValoresArqueo(valores); }} disabled={isSubmitting} />
-                    <TablaResumenStockApertura onStockChange={(items, obs) => { setStockItems(items); setObservacionStock(obs); }} disabled={isSubmitting} />
+                    <InventarioPorCategorias modo="apertura" onStockChange={(items, obs) => { setStockItems(items); setObservacionStock(obs); }} disabled={isSubmitting} />
                     
                     {(Math.abs(montoFisicoCalculado - montoInicial) >= 0.01 || stockItems.some(i => i.diferencia !== 0)) && (
                       <div className="p-4 rounded-xl border-2 bg-red-50 dark:bg-red-950/20 border-red-300 dark:border-red-700">
