@@ -93,13 +93,11 @@ export const PrestamosExternosService = {
   },
 
   async listarAutorizadores() {
-    const response = await axios.get<AutorizadorPrestamoExterno[]>(`${API_BASE_URL}/usuario`, {
-      headers: getHeaders(),
-    });
+    const response = await axios.get<AutorizadorPrestamoExterno[]>(
+      `${API_BASE_URL}/usuario/autorizadores`,
+      { headers: getHeaders() },
+    );
 
-    return response.data.filter((usuario) => {
-      const rol = usuario.role?.nombre?.toLowerCase() || "";
-      return rol.includes("administrador") || rol.includes("encargado");
-    });
+    return response.data;
   },
 };
