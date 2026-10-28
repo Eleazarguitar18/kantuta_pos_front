@@ -55,8 +55,26 @@ const styles = StyleSheet.create({
     badgeCompletada: { backgroundColor: '#d1fae5', color: '#065f46' },
     badgeAnulada: { backgroundColor: '#fee2e2', color: '#991b1b' },
     badgeEditada: { backgroundColor: '#ffedd5', color: '#9a3412' },
-    badgeDefault: { backgroundColor: '#f3f4f6', color: '#374151' }
+    badgeDefault: { backgroundColor: '#f3f4f6', color: '#374151' },
+
+    // Tabla 3: Detalle de productos vendidos
+    detailHeader: { flexDirection: 'row', backgroundColor: '#0f766e', padding: 6, borderRadius: 3, alignItems: 'center' },
+    detailRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#e5e7eb', paddingVertical: 4, paddingHorizontal: 4, alignItems: 'flex-start' },
+
+    colDetalleTicket: { width: '10%', fontSize: 8, textAlign: 'center' },
+    colDetalleProducto: { width: '42%', fontSize: 8, textAlign: 'left', paddingRight: 4 },
+    colDetalleCant: { width: '10%', fontSize: 8, textAlign: 'center' },
+    colDetalleUnit: { width: '19%', fontSize: 8, textAlign: 'right' },
+    colDetalleSub: { width: '19%', fontSize: 8, textAlign: 'right' },
 });
+
+interface DetalleVentaRow {
+    id_producto: number;
+    nombre: string;
+    cantidad: number;
+    precio_unitario: number;
+    subtotal: number;
+}
 
 interface VentaRow {
     id: number;
@@ -64,6 +82,7 @@ interface VentaRow {
     total: number;
     metodo_pago: string;
     estado_venta: string;
+    detalles?: DetalleVentaRow[];
 }
 
 interface ReporteProps {
@@ -129,6 +148,20 @@ const formatFechaBolivia = (fechaStr: string): string => {
 export const ReporteVentasPDF: React.FC<ReporteProps> = ({ datos, rango }) => {
     const { totales, ventas } = datos;
 
+    const totalGeneral = Number(totales.totalVendido ?? 0) || (
+        Number(totales.desglose.efectivo) +
+        Number(totales.desglose.qr) +
+        Number(totales.desglose.transferencia)
+    );
+
+    const detallesVendidos = (ventas || []).flatMap((venta) =>
+        (venta.detalles || []).map((detalle) => ({
+            ticket: venta.id,
+            estado_venta: venta.estado_venta,
+            ...detalle,
+        }))
+    );
+
     return (
         <Document>
             <Page size="A4" style={styles.page}>
@@ -147,7 +180,7 @@ export const ReporteVentasPDF: React.FC<ReporteProps> = ({ datos, rango }) => {
                     <View style={styles.kpiCard}>
                         <Text style={styles.kpiLabel}>Monto Bruto Operado</Text>
                         <Text style={[styles.kpiValue, { color: '#16a34a' }]}>
-                            Bs. {totales.desglose.digitalTotal.toFixed(2)}
+                            Bs. {totalGeneral.toFixed(2)}
                         </Text>
                     </View>
                     <View style={styles.kpiCard}>
@@ -181,7 +214,7 @@ export const ReporteVentasPDF: React.FC<ReporteProps> = ({ datos, rango }) => {
                     <View style={styles.totalRow}>
                         <Text style={[styles.colResumenConcepto, { fontWeight: 'bold' }]}>TOTAL NETO CONSOLIDADO</Text>
                         <Text style={[styles.colResumenMonto, { fontWeight: 'bold' }]}>
-                            Bs. {totales.desglose.digitalTotal.toFixed(2)}
+                            Bs. {totalGeneral.toFixed(2)}
                         </Text>
                     </View>
                 </View>
@@ -230,6 +263,44 @@ export const ReporteVentasPDF: React.FC<ReporteProps> = ({ datos, rango }) => {
                         </View>
                     )}
                 </View>
+
+                {/* 3. SECCIÓN: DETALLE DE PRODUCTOS VENDIDOS */}
+                <Text style={styles.sectionTitle}>3. Detalle de Productos Vendidos</Text>
+
+                <View style={styles.tableContainer}>
+                    <View style={styles.detailHeader}>
+                        <Text style={[styles.colDetalleTicket, styles.textHeader]}>Ticket #</Text>
+                        <Text style={[styles.colDetalleProducto, styles.textHeader]}>Producto</Text>
+                        <Text style={[styles.colDetalleCant, styles.textHeader]}>Cant.</Text>
+                        <Text style={[styles.colDetalleUnit, styles.textHeader]}>P. Unit.</Text>
+                        <Text style={[styles.colDetalleSub, styles.textHeader]}>Subtotal</Text>
+                    </View>
+
+                    {detallesVendidos.length > 0 ? (
+                        detallesVendidos.map((detalle, index) => (
+                            <View
+                                key={`${detalle.ticket}-${detalle.id_producto}-${index}`}
+                                style={styles.detailRow}
+                                wrap={false}
+                            >
+                                <Text style={[styles.colDetalleTicket, styles.textCell]}>{detalle.ticket}</Text>
+                                <Text style={[styles.colDetalleProducto, styles.textCell]}>{detalle.nombre}</Text>
+                                <Text style={[styles.colDetalleCant, styles.textCell]}>{detalle.cantidad}</Text>
+                                <Text style={[styles.colDetalleUnit, styles.textCell]}>
+                                    Bs. {Number(detalle.precio_unitario).toFixed(2)}
+                                </Text>
+                                <Text style={[styles.colDetalleSub, styles.textCell, styles.textTotalBold]}>
+                                    Bs. {Number(detalle.subtotal).toFixed(2)}
+                                </Text>
+                            </View>
+                        ))
+                    ) : (
+                        <View style={{ padding: 15, textAlign: 'center' }}>
+                            <Text style={{ fontSize: 10, color: '#6b7280' }}>No hay detalle de productos para este período.</Text>
+                        </View>
+                    )}
+                </View>
+
                 <ReporteFooterAudit />
             </Page>
         </Document>

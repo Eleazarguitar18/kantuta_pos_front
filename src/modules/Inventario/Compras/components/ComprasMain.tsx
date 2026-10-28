@@ -272,7 +272,7 @@ const ComprasMain = () => {
                     {selectedCompra.detalles?.map((detalle, idx) => (
                       <tr key={idx}>
                         <td className="px-4 py-2 text-sm text-gray-800 dark:text-gray-300">
-                          {detalle.producto?.nombre || `ID: ${detalle.id_producto}`}
+                          {detalle.producto?.nombre || `Producto eliminado #${detalle.id_producto}`}
                         </td>
                         <td className="px-4 py-2 text-sm text-right text-gray-800 dark:text-gray-300">
                           {detalle.cantidad}

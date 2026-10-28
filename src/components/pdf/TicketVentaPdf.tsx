@@ -88,8 +88,9 @@ interface VentaData {
   cajero: string;
   metodo_pago: string;
   estado_venta: string;
-  detalles: Array<{
-    nombre: string;
+  detalles?: Array<{
+    id_producto?: number;
+    nombre?: string;
     cantidad: number;
     precio_unitario: number;
     subtotal: number;
@@ -129,26 +130,28 @@ export const TicketVentaPdf: React.FC<{ data: VentaData }> = ({ data }) => (
           </View>
         </View>
 
-        {data.detalles.map((d, i) => (
+        {(data.detalles || []).map((d, i) => (
           <View style={styles.tableRow} key={i}>
             <View style={styles.tableColProduct}>
-              <Text style={styles.tableCell}>{d.nombre}</Text>
+              <Text style={styles.tableCell}>
+                {d.nombre?.trim() || `Producto #${d.id_producto ?? 's/n'}`}
+              </Text>
             </View>
             <View style={styles.tableColCant}>
               <Text style={styles.tableCell}>{d.cantidad}</Text>
             </View>
             <View style={styles.tableColUnit}>
-              <Text style={styles.tableCell}>Bs. {d.precio_unitario.toFixed(2)}</Text>
+              <Text style={styles.tableCell}>Bs. {Number(d.precio_unitario || 0).toFixed(2)}</Text>
             </View>
             <View style={styles.tableColSub}>
-              <Text style={styles.tableCell}>Bs. {d.subtotal.toFixed(2)}</Text>
+              <Text style={styles.tableCell}>Bs. {Number(d.subtotal || 0).toFixed(2)}</Text>
             </View>
           </View>
         ))}
       </View>
 
       <View style={styles.totalBox}>
-        <Text>TOTAL: Bs. {data.total.toFixed(2)}</Text>
+        <Text>TOTAL: Bs. {Number(data.total || 0).toFixed(2)}</Text>
       </View>
     </Page>
   </Document>
