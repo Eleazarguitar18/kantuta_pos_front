@@ -112,6 +112,56 @@ export const AgentesService = {
     });
   },
 
+  // Registrar devolución parcial o total de un retiro/préstamo vinculado
+  async registrarDevolucionTransaccion(
+    id: number | string,
+    data: { persona_devolvio: string; monto: number; observacion?: string },
+  ) {
+    return await axios.patch<TransaccionAgente>(
+      `${API_BASE_URL}/agentes/transacciones/${id}/devolucion`,
+      {
+        persona_devolvio: data.persona_devolvio.trim(),
+        persona_que_devolvio: data.persona_devolvio.trim(),
+        monto: Number(data.monto) || 0,
+        monto_devuelto: Number(data.monto) || 0,
+        observacion: data.observacion?.trim() || undefined,
+        observacion_devolucion: data.observacion?.trim() || undefined,
+        id_user_update: getUserId(),
+      },
+      { headers: getHeaders() },
+    );
+  },
+
+  // Corregir nombres libres asociados al retiro/devolución por errores de digitación
+  async editarPersonaMovimiento(
+    id: number | string,
+    data: { persona_llevo?: string; persona_devolvio?: string },
+  ) {
+    return await axios.patch<TransaccionAgente>(
+      `${API_BASE_URL}/agentes/transacciones/${id}/persona`,
+      {
+        persona_llevo: data.persona_llevo?.trim() || undefined,
+        persona_que_llevo: data.persona_llevo?.trim() || undefined,
+        persona_devolvio: data.persona_devolvio?.trim() || undefined,
+        persona_que_devolvio: data.persona_devolvio?.trim() || undefined,
+        id_user_update: getUserId(),
+      },
+      { headers: getHeaders() },
+    );
+  },
+
+  // Ajustar capital total del banco seleccionado. Acción exclusiva de Administrador en UI.
+  async ajustarCapitalBanco(id: number | string, monto_total: number) {
+    return await axios.patch<AgenteBanco>(
+      `${API_BASE_URL}/agentes/bancos/${id}/capital`,
+      {
+        monto_total: Number(monto_total) || 0,
+        id_user_update: getUserId(),
+      },
+      { headers: getHeaders() },
+    );
+  },
+
   // Registrar movimiento en el banco activo
   async registrarTransaccionAgente(payload: RegistrarTransaccionAgenteDTO) {
     const userId = getUserId();
@@ -139,6 +189,12 @@ export const AgentesService = {
       motivo: observacionText,
       ...(payload.nombre_operador && payload.nombre_operador.trim()
         ? { nombre_operador: payload.nombre_operador.trim() }
+        : {}),
+      ...(payload.persona_llevo && payload.persona_llevo.trim()
+        ? {
+            persona_llevo: payload.persona_llevo.trim(),
+            persona_que_llevo: payload.persona_llevo.trim(),
+          }
         : {}),
       ...(userId ? { id_user_create: userId } : {}),
     };

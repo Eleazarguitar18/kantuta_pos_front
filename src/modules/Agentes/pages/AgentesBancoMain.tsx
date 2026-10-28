@@ -16,6 +16,9 @@ import {
 import { AgentesService } from "../services/agentesService";
 import ModalCrearBanco from "../components/ModalCrearBanco";
 import ModalRegistrarMovimiento from "../components/ModalRegistrarMovimiento";
+import ModalRegistrarDevolucion from "../components/ModalRegistrarDevolucion";
+import ModalEditarPersonaMovimiento from "../components/ModalEditarPersonaMovimiento";
+import ModalAjustarCapitalBanco from "../components/ModalAjustarCapitalBanco";
 import Swal from "sweetalert2";
 import {
   Wallet,
@@ -33,6 +36,8 @@ import {
   Landmark,
   ShieldCheck,
   Trash2,
+  Pencil,
+  HandCoins,
 } from "lucide-react";
 
 export const formatMonto = (val: any): string => {
@@ -81,8 +86,12 @@ const AgentesBancoMain: React.FC = () => {
   // Modales
   const [isModalCrearBancoOpen, setIsModalCrearBancoOpen] = useState<boolean>(false);
   const [isModalMovimientoOpen, setIsModalMovimientoOpen] = useState<boolean>(false);
+  const [isModalDevolucionOpen, setIsModalDevolucionOpen] = useState<boolean>(false);
+  const [isModalEditarPersonaOpen, setIsModalEditarPersonaOpen] = useState<boolean>(false);
+  const [isModalAjustarCapitalOpen, setIsModalAjustarCapitalOpen] = useState<boolean>(false);
   const [operadorSeleccionadoParaModal, setOperadorSeleccionadoParaModal] = useState<OperadorDeuda | null>(null);
   const [tipoOperacionModal, setTipoOperacionModal] = useState<TipoTransaccionAgente>("PRESTAMO_OPERADOR");
+  const [transaccionSeleccionada, setTransaccionSeleccionada] = useState<TransaccionAgente | null>(null);
 
   // Alertas / Feedback
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -359,6 +368,52 @@ const AgentesBancoMain: React.FC = () => {
     return operadores.reduce((acc, op) => acc + Number(op.monto_pendiente || 0), 0);
   }, [operadores]);
 
+  const obtenerPersonaLlevo = (transaccion: TransaccionAgente) =>
+    transaccion.persona_llevo ||
+    transaccion.persona_que_llevo ||
+    transaccion.nombre_operador ||
+    "No especificado";
+
+  const obtenerPersonaDevolvio = (transaccion: TransaccionAgente) =>
+    transaccion.persona_devolvio || transaccion.persona_que_devolvio || "";
+
+  const obtenerSaldoPendiente = (transaccion: TransaccionAgente) => {
+    const saldoBackend = transaccion.saldo_pendiente ?? transaccion.monto_pendiente;
+    if (saldoBackend !== undefined && saldoBackend !== null) return Math.max(Number(saldoBackend) || 0, 0);
+
+    const monto = Number(transaccion.monto || 0);
+    const devuelto = Number(transaccion.monto_devuelto || 0);
+    return Math.max(monto - devuelto, 0);
+  };
+
+  const obtenerEstadoDevolucion = (transaccion: TransaccionAgente) => {
+    const estadoBackend = transaccion.estado_devolucion?.toUpperCase();
+    if (estadoBackend) return estadoBackend;
+    return obtenerSaldoPendiente(transaccion) > 0 ? "PENDIENTE" : "COMPLETO";
+  };
+
+  const formatearFechaMovimiento = (fecha?: string) => {
+    if (!fecha) return "Sin fecha";
+    const parsed = new Date(fecha);
+    if (Number.isNaN(parsed.getTime())) return fecha;
+    return parsed.toLocaleString("es-BO", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const esRetiroVinculado = (transaccion: TransaccionAgente) => {
+    const tipoStr = String(transaccion?.tipo || "");
+    return tipoStr === "PRESTAMO_OPERADOR" || tipoStr === "PRESTAMO" || tipoStr === "EGRESO_BANCO";
+  };
+
+  const transaccionesRetiro = useMemo(() => {
+    return transacciones.filter(esRetiroVinculado);
+  }, [transacciones]);
+
   // Abrir modal configurado para un operador específico
   const handleAbrirModalParaOperador = (operador: OperadorDeuda, accion: "PRESTAMO" | "COBRO") => {
     setTipoOperacionModal(accion === "PRESTAMO" ? "PRESTAMO_OPERADOR" : "COBRO_OPERADOR");
@@ -371,6 +426,21 @@ const AgentesBancoMain: React.FC = () => {
     setTipoOperacionModal("PRESTAMO_OPERADOR");
     setOperadorSeleccionadoParaModal(null);
     setIsModalMovimientoOpen(true);
+  };
+
+  const handleAbrirModalDevolucion = (transaccion: TransaccionAgente) => {
+    setTransaccionSeleccionada(transaccion);
+    setIsModalDevolucionOpen(true);
+  };
+
+  const handleAbrirModalEditarPersona = (transaccion: TransaccionAgente) => {
+    setTransaccionSeleccionada(transaccion);
+    setIsModalEditarPersonaOpen(true);
+  };
+
+  const refrescarDespuesDeCambio = () => {
+    cargarDatosBanco(selectedBancoId, false);
+    fetchBancos();
   };
 
   return (
@@ -514,6 +584,19 @@ const AgentesBancoMain: React.FC = () => {
               <span className="text-indigo-200">Capital Asignado: </span>
               <strong className="text-white text-sm">Bs. {formatMonto(bancoActivo.monto_total)}</strong>
             </div>
+
+            {/* BOTÓN EDITAR CAPITAL TOTAL (EXCLUSIVO ADMINISTRADOR) */}
+            {esAdministrador && (
+              <button
+                type="button"
+                onClick={() => setIsModalAjustarCapitalOpen(true)}
+                title="Editar capital total del banco"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white font-bold text-xs transition-colors shadow-sm"
+              >
+                <Pencil className="w-4 h-4" />
+                <span>Editar Capital Total</span>
+              </button>
+            )}
 
             {/* BOTÓN ELIMINAR BANCO / AGENTE (EXCLUSIVO ADMINISTRADOR) */}
             {esAdministrador && (
@@ -791,77 +874,128 @@ const AgentesBancoMain: React.FC = () => {
           </ComponentCard>
         </div>
 
-        {/* COLUMNA DERECHA: HISTORIAL RECIENTE */}
+        {/* COLUMNA DERECHA: RETIROS Y DEVOLUCIONES VINCULADAS */}
         <div className="space-y-4">
           <ComponentCard
-            title="Últimos Movimientos"
-            desc={`Flujo de ${bancoActivo?.nombre_banco || "agente"}.`}
+            title="Retiros y Devoluciones Vinculadas"
+            desc={`Trazabilidad de quién llevó y devolvió dinero en ${bancoActivo?.nombre_banco || "agente"}.`}
           >
-            {transacciones.length === 0 ? (
+            {transaccionesRetiro.length === 0 ? (
               <div className="py-8 text-center text-gray-400 text-xs">
                 <Clock className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-1" />
-                No hay movimientos registrados para este banco.
+                No hay retiros registrados para este banco.
               </div>
             ) : (
-              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-                {transacciones.map((t) => {
-                  const tipoStr = String(t?.tipo || "");
-                  const isPrestamo =
-                    tipoStr === "PRESTAMO_OPERADOR" ||
-                    tipoStr === "PRESTAMO" ||
-                    tipoStr === "EGRESO_BANCO";
-                  const viaStr = String(t?.origen_fondo || (t as any)?.via || "BANCO");
-                  const fechaStr = t?.fecha || t?.created_at;
-                  const fechaDisplay = fechaStr ? new Date(fechaStr).toLocaleDateString("es-BO") : "-";
+              <div className="max-h-[560px] overflow-auto pr-1">
+                <table className="min-w-[980px] w-full text-left text-xs">
+                  <thead className="sticky top-0 z-10 bg-white dark:bg-gray-800">
+                    <tr className="border-b border-gray-200 text-[10px] uppercase text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                      <th className="px-3 py-3">Fecha Retiro / Fecha Devolución</th>
+                      <th className="px-3 py-3">Persona que Llevó</th>
+                      <th className="px-3 py-3">Persona que Devolvió</th>
+                      <th className="px-3 py-3 text-right">Monto Retirado vs Saldo Pendiente</th>
+                      <th className="px-3 py-3 text-center">Estado Devolución</th>
+                      <th className="px-3 py-3 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                    {transaccionesRetiro.map((t) => {
+                      const saldoPendiente = obtenerSaldoPendiente(t);
+                      const estadoDevolucion = obtenerEstadoDevolucion(t);
+                      const estaPendiente = estadoDevolucion === "PENDIENTE";
+                      const personaDevolvio = obtenerPersonaDevolvio(t);
+                      const fechaRetiro = t.fecha || t.created_at;
 
-                  return (
-                    <div
-                      key={t?.id || Math.random()}
-                      className="p-3 bg-gray-50/70 dark:bg-gray-900/40 rounded-xl border border-gray-200 dark:border-gray-700 flex items-start justify-between gap-3 text-xs"
-                    >
-                      <div className="flex items-start gap-2.5">
-                        <div
-                          className={`p-2 rounded-lg mt-0.5 ${
-                            isPrestamo
-                              ? "bg-rose-100 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400"
-                              : "bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400"
-                          }`}
-                        >
-                          {isPrestamo ? (
-                            <ArrowUpRight className="w-4 h-4" />
-                          ) : (
-                            <ArrowDownLeft className="w-4 h-4" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-bold text-gray-800 dark:text-gray-200">
-                            {t?.nombre_operador || (t as any)?.usuario?.nombre || "Operación General"}
-                          </p>
-                          <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                            {t?.motivo || (t as any)?.observacion || (tipoStr ? tipoStr.replace(/_/g, " ") : "Movimiento")}
-                          </p>
-                          <div className="flex items-center gap-2 text-[10px] text-gray-400 mt-1">
-                            <span>Vía: <strong>{viaStr}</strong></span>
-                            <span>•</span>
-                            <span>{fechaDisplay}</span>
-                          </div>
-                        </div>
-                      </div>
+                      return (
+                        <tr key={t.id} className="align-top transition-colors hover:bg-gray-50/80 dark:hover:bg-gray-800/50">
+                          <td className="px-3 py-3 text-gray-600 dark:text-gray-300">
+                            <div className="space-y-1">
+                              <p>
+                                <span className="font-bold text-rose-600 dark:text-rose-400">Retiro:</span>{" "}
+                                {formatearFechaMovimiento(fechaRetiro)}
+                              </p>
+                              <p>
+                                <span className="font-bold text-emerald-600 dark:text-emerald-400">Devolución:</span>{" "}
+                                {t.fecha_devolucion ? formatearFechaMovimiento(t.fecha_devolucion) : "Sin devolver"}
+                              </p>
+                            </div>
+                          </td>
 
-                      <div className="text-right">
-                        <p
-                          className={`font-black text-xs ${
-                            isPrestamo
-                              ? "text-rose-600 dark:text-rose-400"
-                              : "text-emerald-600 dark:text-emerald-400"
-                          }`}
-                        >
-                          {isPrestamo ? "-" : "+"}Bs. {formatMonto(t?.monto)}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
+                          <td className="px-3 py-3">
+                            <span className="inline-flex rounded-lg bg-indigo-50 px-2.5 py-1 font-extrabold text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
+                              {obtenerPersonaLlevo(t)}
+                            </span>
+                            <p className="mt-1 max-w-[220px] text-[11px] text-gray-500 dark:text-gray-400">
+                              {t.motivo || "Sin observación de retiro"}
+                            </p>
+                          </td>
+
+                          <td className="px-3 py-3">
+                            {personaDevolvio ? (
+                              <span className="inline-flex rounded-lg bg-emerald-50 px-2.5 py-1 font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                                {personaDevolvio}
+                              </span>
+                            ) : (
+                              <span className="inline-flex rounded-lg bg-amber-50 px-2.5 py-1 font-bold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                                Sin devolver
+                              </span>
+                            )}
+                            {t.observacion_devolucion && (
+                              <p className="mt-1 max-w-[220px] text-[11px] text-gray-500 dark:text-gray-400">
+                                {t.observacion_devolucion}
+                              </p>
+                            )}
+                          </td>
+
+                          <td className="px-3 py-3 text-right">
+                            <p className="font-black text-rose-600 dark:text-rose-400">
+                              Retirado: Bs. {formatMonto(t.monto)}
+                            </p>
+                            <p className={`font-extrabold ${estaPendiente ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                              Pendiente: Bs. {formatMonto(saldoPendiente)}
+                            </p>
+                          </td>
+
+                          <td className="px-3 py-3 text-center">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-extrabold ${
+                                estaPendiente
+                                  ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+                                  : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
+                              }`}
+                            >
+                              {estaPendiente ? <Clock className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
+                              {estaPendiente ? "PENDIENTE" : "COMPLETO"}
+                            </span>
+                          </td>
+
+                          <td className="px-3 py-3 text-right">
+                            <div className="flex flex-col items-end gap-2">
+                              {estaPendiente && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleAbrirModalDevolucion(t)}
+                                  className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[11px] font-bold text-white shadow-sm transition-colors hover:bg-emerald-700"
+                                >
+                                  <HandCoins className="h-3.5 w-3.5" />
+                                  Registrar Devolución
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleAbrirModalEditarPersona(t)}
+                                className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 px-2.5 py-1.5 text-[11px] font-bold text-indigo-700 transition-colors hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                                Editar Persona
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </ComponentCard>
@@ -876,6 +1010,32 @@ const AgentesBancoMain: React.FC = () => {
           onBancoCreado={handleBancoCreado}
         />
       )}
+
+      {/* MODAL AJUSTAR CAPITAL TOTAL (SOLO ADMINISTRADOR) */}
+      {esAdministrador && (
+        <ModalAjustarCapitalBanco
+          isOpen={isModalAjustarCapitalOpen}
+          onClose={() => setIsModalAjustarCapitalOpen(false)}
+          banco={bancoActivo}
+          onCapitalActualizado={refrescarDespuesDeCambio}
+        />
+      )}
+
+      {/* MODAL REGISTRAR DEVOLUCIÓN VINCULADA */}
+      <ModalRegistrarDevolucion
+        isOpen={isModalDevolucionOpen}
+        onClose={() => setIsModalDevolucionOpen(false)}
+        transaccion={transaccionSeleccionada}
+        onDevolucionRegistrada={refrescarDespuesDeCambio}
+      />
+
+      {/* MODAL EDITAR PERSONA DEL MOVIMIENTO */}
+      <ModalEditarPersonaMovimiento
+        isOpen={isModalEditarPersonaOpen}
+        onClose={() => setIsModalEditarPersonaOpen(false)}
+        transaccion={transaccionSeleccionada}
+        onPersonaActualizada={refrescarDespuesDeCambio}
+      />
 
       {/* MODAL DE REGISTRAR MOVIMIENTO CON OPERADORES DE LA BD */}
       <ModalRegistrarMovimiento

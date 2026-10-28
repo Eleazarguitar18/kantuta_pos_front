@@ -26,6 +26,17 @@ export interface SesionCaja extends BaseEntityAudit {
   id_caja: number;
   caja?: Caja;
   id_usuario: number;
+  // Campos de descuadre / declaración
+  monto_sistema_esperado_apertura?: number | null;
+  monto_inicial_declarado?: number | null;
+  diferencia_apertura?: number | null;
+  observacion_apertura?: string | null;
+  responsable_descuadre_apertura?: string | null;
+  monto_sistema_esperado_cierre?: number | null;
+  monto_final_declarado?: number | null;
+  diferencia_cierre?: number | null;
+  observacion_cierre?: string | null;
+  responsable_descuadre_cierre?: string | null;
 }
 
 export interface MovimientoCaja extends BaseEntityAudit {

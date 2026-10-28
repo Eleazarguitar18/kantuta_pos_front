@@ -35,6 +35,7 @@ import CajasRegister from "./modules/Cajas/components/CajasRegister";
 import CajasEdit from "./modules/Cajas/components/CajasEdit";
 import CajasControl from "./modules/Cajas/components/CajasControl";
 import PrestamosMain from "./modules/Cajas/components/PrestamosMain";
+import DescuadresResponsabilidades from "./modules/Cajas/components/DescuadresResponsabilidades";
 import AgentesBancoMain from "./modules/Agentes/pages/AgentesBancoMain";
 import VentasMain from "./modules/Ventas/components/VentasMain";
 import PuntoDeVenta from "./modules/Ventas/components/PuntoDeVenta";
@@ -52,6 +53,7 @@ import ReporteInventario from "./modules/Reportes/components/ReporteInventario";
 import ReporteProductividad from "./modules/Reportes/components/ReporteProductividad";
 import WhatsAppMain from "./modules/WhatsApp/pages/WhatsAppMain";
 import NotificacionesMain from "./modules/Administracion/Notificaciones/components/NotificacionesMain";
+import PrestamosExternosPage from "./modules/PrestamosExternos/pages/PrestamosExternosPage";
 import { Toaster } from "react-hot-toast";
 
 export default function App() {
@@ -95,10 +97,14 @@ export default function App() {
                   <Route path="control/:id" element={<CajasControl />} />
                   <Route path="prestamos" element={<PrestamosMain />} />
                   <Route element={<ProtectedRoute allowedRoles={['Administrador']} />}>
+                    <Route path="responsabilidades" element={<DescuadresResponsabilidades />} />
                     <Route path="registrar" element={<CajasRegister />} />
                     <Route path="editar/:id" element={<CajasEdit />} />
                   </Route>
                 </Route>
+
+                {/* Préstamos Externos */}
+                <Route path="/prestamos-externos" element={<PrestamosExternosPage />} />
 
                 {/* Agentes - Banco */}
                 <Route path="/agentes">

@@ -8,7 +8,7 @@ export interface BaseEntityAudit {
 
 export interface Role {
   id: number;
-  nombre: "admin" | "user" | string;
+  nombre: "Administrador" | "Operador" | "Usuario" | string;
   descripcion?: string;
 }
 
