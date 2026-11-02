@@ -17,6 +17,8 @@ interface DescuadreItem {
   costo_unitario_producto?: number;
   observacion?: string;
   estado_resolucion: "PENDIENTE" | "RESUELTO" | "JUSTIFICADO";
+  fecha_resolucion?: string | null;
+  monto_recuperado?: number | null;
   created_at: string;
   operador_culpable?: {
     id: number;
@@ -77,23 +79,81 @@ export default function DescuadresResponsabilidades() {
 
   const handleResolver = async (item: DescuadreItem, nuevoEstado: "RESUELTO" | "JUSTIFICADO") => {
     const actionLabel = nuevoEstado === "RESUELTO" ? "Cobrado / Repuesto por el Operador" : "Justificado (Exonerado / Merma)";
-    
-    const { value: observacionResolucion } = await Swal.fire({
-      title: `Marcar como ${actionLabel}`,
-      input: "text",
-      inputLabel: "Nota o comprobante de resolución (Opcional):",
-      inputPlaceholder: "Ej. Se descontó de nómina / repuso producto en físico...",
-      showCancelButton: true,
-      confirmButtonText: "Confirmar",
-      cancelButtonText: "Cancelar",
-      confirmButtonColor: nuevoEstado === "RESUELTO" ? "#10B981" : "#6366F1",
-    });
+    const hoy = new Date();
+    const fechaDefault = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
+    let montoRecuperado: number | undefined;
+    let fechaResolucion: string | undefined;
+    let observacionResolucion = "";
 
-    if (observacionResolucion === undefined) return; // Cancelado
+    if (nuevoEstado === "RESUELTO") {
+      const deudaEstimada = Number(item.monto_deuda_estimado || 0);
+      const resultado = await Swal.fire({
+        title: `Marcar como ${actionLabel}`,
+        html: `
+          <div style="text-align:left;font-size:13px;display:grid;gap:10px">
+            <label for="swal-monto" style="font-weight:600;color:#374151">Monto recuperado (Bs)</label>
+            <input id="swal-monto" type="number" min="0" step="0.01" class="swal2-input" style="margin:0;width:100%" value="${deudaEstimada.toFixed(2)}" />
+            <label for="swal-fecha" style="font-weight:600;color:#374151">Fecha de recuperación</label>
+            <input id="swal-fecha" type="date" class="swal2-input" style="margin:0;width:100%" value="${fechaDefault}" />
+            <label for="swal-observacion" style="font-weight:600;color:#374151">Nota o comprobante (opcional)</label>
+            <textarea id="swal-observacion" class="swal2-textarea" style="margin:0;width:100%" placeholder="Ej. Se descontó de nómina / repuso producto en físico..."></textarea>
+          </div>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: "Confirmar",
+        cancelButtonText: "Cancelar",
+        confirmButtonColor: "#10B981",
+        preConfirm: () => {
+          const monto = Number(
+            (document.getElementById("swal-monto") as HTMLInputElement | null)?.value,
+          );
+          const fecha = (
+            document.getElementById("swal-fecha") as HTMLInputElement | null
+          )?.value;
+          const observacion = (
+            document.getElementById("swal-observacion") as HTMLTextAreaElement | null
+          )?.value;
+
+          if (!Number.isFinite(monto) || monto < 0) {
+            Swal.showValidationMessage("Ingrese un monto recuperado válido.");
+            return false;
+          }
+          if (!fecha) {
+            Swal.showValidationMessage("Seleccione la fecha de recuperación.");
+            return false;
+          }
+          return { monto, fecha, observacion: observacion || "" };
+        },
+      });
+
+      if (!resultado.isConfirmed || !resultado.value) return;
+      montoRecuperado = resultado.value.monto;
+      fechaResolucion = resultado.value.fecha;
+      observacionResolucion = resultado.value.observacion;
+    } else {
+      const { value } = await Swal.fire({
+        title: `Marcar como ${actionLabel}`,
+        input: "text",
+        inputLabel: "Nota o comprobante de resolución (Opcional):",
+        inputPlaceholder: "Ej. Se descontó de nómina / repuso producto en físico...",
+        showCancelButton: true,
+        confirmButtonText: "Confirmar",
+        cancelButtonText: "Cancelar",
+        confirmButtonColor: "#6366F1",
+      });
+
+      if (value === undefined) return;
+      observacionResolucion = value || "";
+    }
 
     try {
       await CajasService.resolverDescuadre(item.id, {
         estado_resolucion: nuevoEstado,
+        monto_recuperado: montoRecuperado,
+        fecha_resolucion: fechaResolucion
+          ? new Date(`${fechaResolucion}T12:00:00`).toISOString()
+          : undefined,
         observacion_resolucion: observacionResolucion || undefined,
       });
 
@@ -413,9 +473,22 @@ export default function DescuadresResponsabilidades() {
                           </span>
                         )}
                         {item.estado_resolucion === "RESUELTO" && (
-                          <span className="inline-flex rounded-full bg-green-100 px-2.5 py-1 text-xs font-bold text-green-800 dark:bg-green-950/40 dark:text-green-400">
-                            ✓ COBRADO
-                          </span>
+                          <div>
+                            <span className="inline-flex rounded-full bg-green-100 px-2.5 py-1 text-xs font-bold text-green-800 dark:bg-green-950/40 dark:text-green-400">
+                              ✓ COBRADO
+                            </span>
+                            <div className="mt-1 text-[11px] text-gray-500">
+                              {item.monto_recuperado !== null &&
+                              item.monto_recuperado !== undefined
+                                ? `Recuperado: Bs. ${Number(item.monto_recuperado).toFixed(2)}`
+                                : "Monto no registrado"}
+                            </div>
+                            {item.fecha_resolucion && (
+                              <div className="text-[11px] text-gray-400">
+                                {new Date(item.fecha_resolucion).toLocaleDateString()}
+                              </div>
+                            )}
+                          </div>
                         )}
                         {item.estado_resolucion === "JUSTIFICADO" && (
                           <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-800 dark:bg-gray-800 dark:text-gray-300">

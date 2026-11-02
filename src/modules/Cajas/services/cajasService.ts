@@ -196,7 +196,12 @@ export const CajasService = {
   },
   async resolverDescuadre(
     id: number,
-    data: { estado_resolucion: string; observacion_resolucion?: string },
+    data: {
+      estado_resolucion: string;
+      monto_recuperado?: number;
+      fecha_resolucion?: string;
+      observacion_resolucion?: string;
+    },
   ) {
     return await axios.patch(
       `${API_BASE_URL}/cajas/descuadres/${id}/resolver`,

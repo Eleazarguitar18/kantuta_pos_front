@@ -93,6 +93,7 @@ const navItems: NavItem[] = [
     name: "Reportes",
     subItems: [
       { name: "Reportes Generales", path: "/reportes", pro: false },
+      { name: "Matriz de Control", path: "/reportes/matriz-control", pro: false },
     ],
   },
   {
