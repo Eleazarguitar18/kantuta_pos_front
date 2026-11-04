@@ -6,17 +6,57 @@ const getHeaders = () => ({
   Authorization: `Bearer ${localStorage.getItem("access_token")}`,
 });
 
+export type WhatsappEstado =
+  | "desconectado"
+  | "conectando"
+  | "esperando_qr"
+  | "conectado"
+  | "cerrando"
+  | "error";
+
+export interface WhatsappStatus {
+  success: boolean;
+  estado: WhatsappEstado;
+  conectado: boolean;
+  qrBase64: string | null;
+  qrActualizadoEn: string | null;
+  telefono: string | null;
+  nombre: string | null;
+  mensaje: string;
+  intentosReconexion: number;
+  ultimoError: string | null;
+  conectadoEn: string | null;
+}
+
 export const WhatsAppService = {
-  async connect() {
-    const response = await axios.get(`${API_BASE_URL}/whatsapp/connect`, {
-      headers: getHeaders(),
-    });
+  async getStatus() {
+    const response = await axios.get<WhatsappStatus>(
+      `${API_BASE_URL}/whatsapp/qr`,
+      {
+        headers: getHeaders(),
+      },
+    );
     return response;
   },
 
+  async connect() {
+    return WhatsAppService.getStatus();
+  },
+
   async logout() {
-    const response = await axios.post(
+    const response = await axios.post<WhatsappStatus>(
       `${API_BASE_URL}/whatsapp/logout`,
+      {},
+      {
+        headers: getHeaders(),
+      },
+    );
+    return response;
+  },
+
+  async resetSession() {
+    const response = await axios.post<WhatsappStatus>(
+      `${API_BASE_URL}/whatsapp/session/reset`,
       {},
       {
         headers: getHeaders(),
