@@ -3,7 +3,7 @@ import Swal from "sweetalert2";
 import { PieChart, RefreshCw } from "lucide-react";
 import { Modal } from "../../../components/ui/modal";
 import Label from "../../../components/form/Label";
-import Input from "../../../components/form/input/InputField";
+import { NumberField } from "../../../components/form/input/NumberInput";
 import Button from "../../../components/ui/button/Button";
 import { AgenteBanco } from "../interfaces/Agente";
 import { AgentesService } from "../services/agentesService";
@@ -97,12 +97,9 @@ const ModalAjustarCapitalBanco: React.FC<ModalAjustarCapitalBancoProps> = ({
 
         <div>
           <Label>Nuevo monto de capital total (Bs.) *</Label>
-          <Input
-            type="number"
-            step={0.1}
-            min="0"
+          <NumberField
             value={montoTotal}
-            onChange={(event) => setMontoTotal(event.target.value === "" ? "" : Number(event.target.value))}
+            onValueChange={(v) => setMontoTotal(v === null ? "" : v)}
             disabled={isSubmitting}
             className="text-lg font-black text-red-700 dark:text-red-300"
           />

@@ -3,6 +3,15 @@ import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
 
 const reportCategories = [
   {
+    title: "Matriz de Control Diario",
+    description: "Control diario compacto con ingresos, compras, gastos, pasivos, otros ingresos, activos, deudas y saldo por turno, exportable a Excel.",
+    icon: "▦",
+    gradient: "from-cyan-500 to-blue-600",
+    hoverGradient: "hover:from-cyan-600 hover:to-blue-700",
+    path: "/reportes/matriz-control",
+    tag: "EXCEL",
+  },
+  {
     title: "Movimientos de Caja",
     description: "Reporte detallado de ingresos, egresos, saldo inicial y teórico de una sesión de caja.",
     icon: "💰",

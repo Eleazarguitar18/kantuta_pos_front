@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { CajasService } from "../services/cajasService";
 import { CategoriasService } from "../../Inventario/Categorias/services/categoriasService";
+import NumberInput from "../../../components/form/input/NumberInput";
 
 export interface ItemStock {
   id: number;
@@ -525,17 +526,14 @@ const InventarioPorCategorias = ({
                               </p>
                             </div>
 
-                            <input
-                              type="number"
-                              min="0"
-                              step="1"
-                              inputMode="numeric"
+                            <NumberInput
+                              decimals={0}
                               value={conteo}
                               disabled={disabled}
-                              onChange={(event) =>
+                              onValueChange={(v) =>
                                 actualizarConteo(
                                   producto.id,
-                                  event.target.value,
+                                  v === null ? "" : String(v),
                                 )
                               }
                               aria-label={`Conteo físico de ${producto.nombre}`}

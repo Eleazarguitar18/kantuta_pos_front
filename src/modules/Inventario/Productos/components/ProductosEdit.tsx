@@ -2,6 +2,7 @@ import Button from "../../../../components/ui/button/Button";
 import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
 import Label from "../../../../components/form/Label";
 import Input from "../../../../components/form/input/InputField";
+import { NumberField } from "../../../../components/form/input/NumberInput";
 import Select from "../../../../components/form/Select";
 import { useForm } from "react-hook-form";
 import { ProductosService } from "../services/productosService";
@@ -240,13 +241,11 @@ function ProductosEdit() {
             {/* Precio Venta */}
             <div>
               <Label htmlFor="precio_venta">Precio de Venta</Label>
-              <Input
-                type="number"
+              <NumberField
                 id="precio_venta"
-                step={0.01}
                 value={form.getValues("precio_venta")}
-                onChange={(e) =>
-                  form.setValue("precio_venta", Number(e.target.value), {
+                onValueChange={(v) =>
+                  form.setValue("precio_venta", v ?? 0, {
                     shouldValidate: true,
                   })
                 }
@@ -261,13 +260,11 @@ function ProductosEdit() {
             {/* Costo Compra */}
             <div>
               <Label htmlFor="costo_compra">Costo de Compra</Label>
-              <Input
-                type="number"
+              <NumberField
                 id="costo_compra"
-                step={0.01}
                 value={form.getValues("costo_compra")}
-                onChange={(e) =>
-                  form.setValue("costo_compra", Number(e.target.value), {
+                onValueChange={(v) =>
+                  form.setValue("costo_compra", v ?? 0, {
                     shouldValidate: true,
                   })
                 }
@@ -282,12 +279,12 @@ function ProductosEdit() {
             {/* Stock Actual */}
             <div>
               <Label htmlFor="stock_actual">Stock Actual</Label>
-              <Input
-                type="number"
+              <NumberField
                 id="stock_actual"
+                decimals={0}
                 value={form.getValues("stock_actual")}
-                onChange={(e) =>
-                  form.setValue("stock_actual", Number(e.target.value), {
+                onValueChange={(v) =>
+                  form.setValue("stock_actual", v ?? 0, {
                     shouldValidate: true,
                   })
                 }
@@ -302,12 +299,12 @@ function ProductosEdit() {
             {/* Stock Mínimo */}
             <div>
               <Label htmlFor="stock_minimo">Stock Mínimo</Label>
-              <Input
-                type="number"
+              <NumberField
                 id="stock_minimo"
+                decimals={0}
                 value={form.getValues("stock_minimo")}
-                onChange={(e) =>
-                  form.setValue("stock_minimo", Number(e.target.value), {
+                onValueChange={(v) =>
+                  form.setValue("stock_minimo", v ?? 0, {
                     shouldValidate: true,
                   })
                 }

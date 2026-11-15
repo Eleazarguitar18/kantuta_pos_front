@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import Label from "../../../components/form/Label";
-import Input from "../../../components/form/input/InputField";
+import { NumberField } from "../../../components/form/input/NumberInput";
 import { Banknote, Coins, RotateCcw } from "lucide-react";
 
 export interface ValoresArqueo {
@@ -203,12 +203,11 @@ const SeccionArqueoBilletes: React.FC<Props> = ({ onChangeTotal, disabled = fals
                   </Label>
                   <span className="text-[10px] text-gray-400">u.</span>
                 </div>
-                <Input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={count === 0 ? "" : count}
-                  onChange={(e) => handleChange(b.key, e.target.value)}
+                <NumberField
+                  value={count}
+                  onValueChange={(v) => handleChange(b.key, v === null ? "" : String(v))}
+                  decimals={0}
+                  emptyWhenZero={false}
                   disabled={disabled}
                   placeholder="0"
                   className="text-center font-bold text-sm h-9"
@@ -250,12 +249,11 @@ const SeccionArqueoBilletes: React.FC<Props> = ({ onChangeTotal, disabled = fals
                   </Label>
                   <span className="text-[10px] text-gray-400">u.</span>
                 </div>
-                <Input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={count === 0 ? "" : count}
-                  onChange={(e) => handleChange(m.key, e.target.value)}
+                <NumberField
+                  value={count}
+                  onValueChange={(v) => handleChange(m.key, v === null ? "" : String(v))}
+                  decimals={0}
+                  emptyWhenZero={false}
                   disabled={disabled}
                   placeholder="0"
                   className="text-center font-bold text-sm h-9"

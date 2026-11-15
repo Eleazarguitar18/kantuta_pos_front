@@ -6,6 +6,7 @@ import Button from "../../../../components/ui/button/Button";
 import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
 import Label from "../../../../components/form/Label";
 import Input from "../../../../components/form/input/InputField";
+import { NumberField } from "../../../../components/form/input/NumberInput";
 import Select from "../../../../components/form/Select";
 import { ComprasService } from "../services/comprasService";
 import { ProductosService } from "../../Productos/services/productosService";
@@ -242,21 +243,17 @@ const ComprasRegister = () => {
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div>
                   <Label>Cantidad</Label>
-                  <Input
-                    type="number"
-                    min="1"
+                  <NumberField
+                    decimals={0}
                     value={cantidad}
-                    onChange={(e) => setCantidad(Number(e.target.value))}
+                    onValueChange={(v) => setCantidad(v ?? 0)}
                   />
                 </div>
                 <div>
                   <Label>Costo Unit.</Label>
-                  <Input
-                    type="number"
-                    step={0.01}
-                    min="0"
+                  <NumberField
                     value={costoUnitario}
-                    onChange={(e) => setCostoUnitario(Number(e.target.value))}
+                    onValueChange={(v) => setCostoUnitario(v ?? 0)}
                   />
                 </div>
               </div>

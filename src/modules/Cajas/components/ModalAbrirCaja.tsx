@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Modal } from "../../../components/ui/modal";
 import Label from "../../../components/form/Label";
-import Input from "../../../components/form/input/InputField";
+import { NumberField } from "../../../components/form/input/NumberInput";
 import Button from "../../../components/ui/button/Button";
 import { AlertTriangle, DollarSign, FileText, RefreshCw, CheckCircle2, Calculator, ChevronDown, ChevronUp } from "lucide-react";
 import { useAuth } from "../../../context/auth/AuthContext";
@@ -282,16 +282,10 @@ const ModalAbrirCaja: React.FC<ModalAbrirCajaProps> = ({
               ? "Calculado automáticamente a partir del desglose de cortes (o puede editarlo directamente)."
               : "Cuente físicamente el dinero en la gaveta e ingrese el total."}
           </p>
-          <Input
-            type="number"
-            step={0.1}
-            min="0"
-            placeholder="0.00"
+          <NumberField
+            placeholder="0,00"
             value={montoDeclarado}
-            onChange={(e) => {
-              const val = e.target.value;
-              setMontoDeclarado(val === "" ? "" : parseFloat(val) || 0);
-            }}
+            onValueChange={(v) => setMontoDeclarado(v === null ? "" : v)}
             className="text-lg font-black text-blue-600 dark:text-blue-400"
             required
           />

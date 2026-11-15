@@ -4,6 +4,7 @@ import Button from "../../../components/ui/button/Button";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
 import Label from "../../../components/form/Label";
 import Input from "../../../components/form/input/InputField";
+import { NumberField } from "../../../components/form/input/NumberInput";
 import Select from "../../../components/form/Select";
 import { CajasService } from "../services/cajasService";
 import Alert from "../../../components/ui/alert/Alert";
@@ -123,14 +124,11 @@ const CajasRegister = () => {
 
           <div>
             <Label htmlFor="saldo">Monto de Creación / Saldo Inicial Base (Bs.)</Label>
-            <Input
-              type="number"
+            <NumberField
               id="saldo"
-              placeholder="Ej: 500.00"
-              step={0.10}
-              min="0"
-              value={montoCreacion.toString()}
-              onChange={(e: any) => setMontoCreacion(Number(e.target.value))}
+              placeholder="Ej: 500,00"
+              value={montoCreacion}
+              onValueChange={(v) => setMontoCreacion(v ?? 0)}
             />
             <p className="text-xs text-gray-500 mt-1">Este será el dinero físico con el que la caja operará en su primer turno.</p>
           </div>

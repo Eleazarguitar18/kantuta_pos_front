@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Modal } from "../../../components/ui/modal";
 import Label from "../../../components/form/Label";
 import Input from "../../../components/form/input/InputField";
+import { NumberField } from "../../../components/form/input/NumberInput";
 import Button from "../../../components/ui/button/Button";
 import { Building2, PlusCircle, RefreshCw, Wallet, CheckCircle2, AlertCircle } from "lucide-react";
 import { AgentesService } from "../services/agentesService";
@@ -200,17 +201,11 @@ export const ModalCrearBanco: React.FC<ModalCrearBancoProps> = ({
           <div>
             <Label htmlFor="capital_inicial">Capital Inicial Total (Bs.) *</Label>
             <div className="relative">
-              <Input
+              <NumberField
                 id="capital_inicial"
-                type="number"
-                step={0.10}
-                min="0.10"
-                placeholder="0.00"
+                placeholder="0,00"
                 value={capitalInicial}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  handleCapitalChange(val === "" ? "" : parseFloat(val) || 0);
-                }}
+                onValueChange={(v) => handleCapitalChange(v ?? "")}
                 className="font-bold text-lg text-indigo-600 dark:text-indigo-400"
                 required
                 disabled={isSubmitting}
@@ -255,17 +250,11 @@ export const ModalCrearBanco: React.FC<ModalCrearBancoProps> = ({
                 <Label htmlFor="monto_efectivo" className="text-[11px] font-semibold text-blue-700 dark:text-blue-300">
                   Saldo en Efectivo (Bs.) *
                 </Label>
-                <Input
+                <NumberField
                   id="monto_efectivo"
-                  type="number"
-                  step={0.10}
-                  min="0"
-                  placeholder="0.00"
+                  placeholder="0,00"
                   value={montoEfectivo}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    handleEfectivoChange(val === "" ? "" : parseFloat(val) || 0);
-                  }}
+                  onValueChange={(v) => handleEfectivoChange(v ?? "")}
                   disabled={isSubmitting}
                   className="text-xs font-bold text-blue-800 dark:text-blue-200"
                   required
@@ -277,17 +266,11 @@ export const ModalCrearBanco: React.FC<ModalCrearBancoProps> = ({
                 <Label htmlFor="monto_banco" className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">
                   Saldo en Cuenta/Banco (Bs.) *
                 </Label>
-                <Input
+                <NumberField
                   id="monto_banco"
-                  type="number"
-                  step={0.10}
-                  min="0"
-                  placeholder="0.00"
+                  placeholder="0,00"
                   value={montoBanco}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    handleBancoChange(val === "" ? "" : parseFloat(val) || 0);
-                  }}
+                  onValueChange={(v) => handleBancoChange(v ?? "")}
                   disabled={isSubmitting}
                   className="text-xs font-bold text-amber-800 dark:text-amber-200"
                   required

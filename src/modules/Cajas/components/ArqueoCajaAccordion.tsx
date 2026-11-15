@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Button from '../../../components/ui/button/Button';
 import Input from '../../../components/form/input/InputField';
+import NumberInput, { NumberField } from '../../../components/form/input/NumberInput';
 import Label from '../../../components/form/Label';
 import { ChevronDown, ChevronUp, DollarSign, Smartphone, CreditCard, Cpu, ShoppingBag, User, Clock, Calendar } from 'lucide-react';
 import { CajasService } from '../services/cajasService';
@@ -398,17 +399,11 @@ export const ArqueoCajaAccordion: React.FC<ArqueoCajaAccordionProps> = ({
             </div>
             <div className="w-full sm:w-56">
               <Label className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">Monto Contado (Bs.)</Label>
-              <Input
-                type="number"
-                step={0.10}
-                min="0"
+              <NumberField
                 value={montoRealFisico}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setMontoRealFisico(val === '' ? '' : parseFloat(val) || 0);
-                }}
+                onValueChange={(v) => setMontoRealFisico(v === null ? '' : v)}
                 className="text-right font-extrabold text-lg bg-white dark:bg-gray-900 text-emerald-700 dark:text-emerald-300 border-emerald-300 focus:ring-emerald-500"
-                placeholder="0.00"
+                placeholder="0,00"
               />
             </div>
           </div>
@@ -500,20 +495,20 @@ export const ArqueoCajaAccordion: React.FC<ArqueoCajaAccordionProps> = ({
                               Tarjeta {op} - {item.den} Bs.
                             </td>
                             <td className="py-2 px-3 text-center">
-                              <input
-                                type="number"
+                              <NumberInput
+                                decimals={0}
                                 value={item.stockSys}
+                                onValueChange={() => {}} emptyWhenZero={false}
                                 disabled
                                 readOnly
                                 className="w-20 text-center font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-md py-1 px-2 cursor-not-allowed"
                               />
                             </td>
                             <td className="py-2 px-3 text-center">
-                              <input
-                                type="number"
-                                min="0"
+                              <NumberInput
+                                decimals={0}
                                 value={val}
-                                onChange={(e) => handleInputChange(item.idKey, parseInt(e.target.value) || 0)}
+                                onValueChange={(v) => handleInputChange(item.idKey, v ?? 0)}
                                 className="w-20 text-center font-bold bg-white dark:bg-gray-900 border border-indigo-300 dark:border-indigo-600 text-indigo-700 dark:text-indigo-300 rounded-md py-1 px-2 focus:ring-2 focus:ring-indigo-500"
                               />
                             </td>
@@ -567,20 +562,20 @@ export const ArqueoCajaAccordion: React.FC<ArqueoCajaAccordionProps> = ({
                         {item.label}
                       </td>
                       <td className="py-2 px-3 text-center">
-                        <input
-                          type="number"
+                        <NumberInput
+                          decimals={0}
                           value={item.stockSys}
+                          onValueChange={() => {}} emptyWhenZero={false}
                           disabled
                           readOnly
                           className="w-20 text-center font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-md py-1 px-2 cursor-not-allowed"
                         />
                       </td>
                       <td className="py-2 px-3 text-center">
-                        <input
-                          type="number"
-                          min="0"
+                        <NumberInput
+                          decimals={0}
                           value={val}
-                          onChange={(e) => handleInputChange(item.key, parseInt(e.target.value) || 0)}
+                          onValueChange={(v) => handleInputChange(item.key, v ?? 0)}
                           className="w-20 text-center font-bold bg-white dark:bg-gray-900 border border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 rounded-md py-1 px-2 focus:ring-2 focus:ring-blue-500"
                         />
                       </td>
@@ -631,22 +626,20 @@ export const ArqueoCajaAccordion: React.FC<ArqueoCajaAccordionProps> = ({
                         {item.label}
                       </td>
                       <td className="py-2 px-3 text-center">
-                        <input
-                          type="number"
-                          step={0.10}
+                        <NumberInput
+                          decimals={2}
                           value={item.saldoTeorico}
+                          onValueChange={() => {}} emptyWhenZero={false}
                           disabled
                           readOnly
                           className="w-24 text-center font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-md py-1 px-2 cursor-not-allowed"
                         />
                       </td>
                       <td className="py-2 px-3 text-center">
-                        <input
-                          type="number"
-                          step={0.10}
-                          min="0"
+                        <NumberInput
+                          decimals={2}
                           value={val}
-                          onChange={(e) => handleInputChange(item.key, parseFloat(e.target.value) || 0)}
+                          onValueChange={(v) => handleInputChange(item.key, v ?? 0)}
                           className="w-24 text-center font-bold bg-white dark:bg-gray-900 border border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-300 rounded-md py-1 px-2 focus:ring-2 focus:ring-amber-500"
                         />
                       </td>
@@ -712,10 +705,10 @@ export const ArqueoCajaAccordion: React.FC<ArqueoCajaAccordionProps> = ({
                                 {item.label} <span className="text-gray-400 font-normal">(Bs. {item.precio})</span>
                               </td>
                               <td className="py-2 px-3 text-center">
-                                <input type="number" value={item.stockSys} disabled readOnly className="w-20 text-center font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 border rounded-md py-1 px-2 cursor-not-allowed" />
+                                <NumberInput decimals={0} value={item.stockSys} onValueChange={() => {}} emptyWhenZero={false} disabled readOnly className="w-20 text-center font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 border rounded-md py-1 px-2 cursor-not-allowed" />
                               </td>
                               <td className="py-2 px-3 text-center">
-                                <input type="number" min="0" value={val} onChange={(e) => handleInputChange(item.key, parseInt(e.target.value) || 0)} className="w-20 text-center font-bold bg-white dark:bg-gray-900 border border-purple-300 text-purple-700 rounded-md py-1 px-2 focus:ring-2 focus:ring-purple-500" />
+                                <NumberInput decimals={0} value={val} onValueChange={(v) => handleInputChange(item.key, v ?? 0)} className="w-20 text-center font-bold bg-white dark:bg-gray-900 border border-purple-300 text-purple-700 rounded-md py-1 px-2 focus:ring-2 focus:ring-purple-500" />
                               </td>
                             </tr>
                           );
@@ -759,10 +752,10 @@ export const ArqueoCajaAccordion: React.FC<ArqueoCajaAccordionProps> = ({
                                 {item.label} <span className="text-gray-400 font-normal">(Bs. {item.precio})</span>
                               </td>
                               <td className="py-2 px-3 text-center">
-                                <input type="number" value={item.stockSys} disabled readOnly className="w-20 text-center font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 border rounded-md py-1 px-2 cursor-not-allowed" />
+                                <NumberInput decimals={0} value={item.stockSys} onValueChange={() => {}} emptyWhenZero={false} disabled readOnly className="w-20 text-center font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 border rounded-md py-1 px-2 cursor-not-allowed" />
                               </td>
                               <td className="py-2 px-3 text-center">
-                                <input type="number" min="0" value={val} onChange={(e) => handleInputChange(item.key, parseInt(e.target.value) || 0)} className="w-20 text-center font-bold bg-white dark:bg-gray-900 border border-purple-300 text-purple-700 rounded-md py-1 px-2 focus:ring-2 focus:ring-purple-500" />
+                                <NumberInput decimals={0} value={val} onValueChange={(v) => handleInputChange(item.key, v ?? 0)} className="w-20 text-center font-bold bg-white dark:bg-gray-900 border border-purple-300 text-purple-700 rounded-md py-1 px-2 focus:ring-2 focus:ring-purple-500" />
                               </td>
                             </tr>
                           );
@@ -806,10 +799,10 @@ export const ArqueoCajaAccordion: React.FC<ArqueoCajaAccordionProps> = ({
                                 {item.label} <span className="text-gray-400 font-normal">(Bs. {item.precio})</span>
                               </td>
                               <td className="py-2 px-3 text-center">
-                                <input type="number" value={item.stockSys} disabled readOnly className="w-20 text-center font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 border rounded-md py-1 px-2 cursor-not-allowed" />
+                                <NumberInput decimals={0} value={item.stockSys} onValueChange={() => {}} emptyWhenZero={false} disabled readOnly className="w-20 text-center font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 border rounded-md py-1 px-2 cursor-not-allowed" />
                               </td>
                               <td className="py-2 px-3 text-center">
-                                <input type="number" min="0" value={val} onChange={(e) => handleInputChange(item.key, parseInt(e.target.value) || 0)} className="w-20 text-center font-bold bg-white dark:bg-gray-900 border border-purple-300 text-purple-700 rounded-md py-1 px-2 focus:ring-2 focus:ring-purple-500" />
+                                <NumberInput decimals={0} value={val} onValueChange={(v) => handleInputChange(item.key, v ?? 0)} className="w-20 text-center font-bold bg-white dark:bg-gray-900 border border-purple-300 text-purple-700 rounded-md py-1 px-2 focus:ring-2 focus:ring-purple-500" />
                               </td>
                             </tr>
                           );
@@ -851,10 +844,10 @@ export const ArqueoCajaAccordion: React.FC<ArqueoCajaAccordionProps> = ({
                                 {item.label} <span className="text-gray-400 font-normal">(Bs. {item.precio})</span>
                               </td>
                               <td className="py-2 px-3 text-center">
-                                <input type="number" value={item.stockSys} disabled readOnly className="w-20 text-center font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 border rounded-md py-1 px-2 cursor-not-allowed" />
+                                <NumberInput decimals={0} value={item.stockSys} onValueChange={() => {}} emptyWhenZero={false} disabled readOnly className="w-20 text-center font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 border rounded-md py-1 px-2 cursor-not-allowed" />
                               </td>
                               <td className="py-2 px-3 text-center">
-                                <input type="number" min="0" value={val} onChange={(e) => handleInputChange(item.key, parseInt(e.target.value) || 0)} className="w-20 text-center font-bold bg-white dark:bg-gray-900 border border-purple-300 text-purple-700 rounded-md py-1 px-2 focus:ring-2 focus:ring-purple-500" />
+                                <NumberInput decimals={0} value={val} onValueChange={(v) => handleInputChange(item.key, v ?? 0)} className="w-20 text-center font-bold bg-white dark:bg-gray-900 border border-purple-300 text-purple-700 rounded-md py-1 px-2 focus:ring-2 focus:ring-purple-500" />
                               </td>
                             </tr>
                           );

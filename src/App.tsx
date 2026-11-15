@@ -51,6 +51,7 @@ import ReporteVentasRango from "./modules/Reportes/components/ReporteVentasRango
 import ReporteComprasRango from "./modules/Reportes/components/ReporteComprasRango";
 import ReporteInventario from "./modules/Reportes/components/ReporteInventario";
 import ReporteProductividad from "./modules/Reportes/components/ReporteProductividad";
+import ReporteMatrizControl from "./modules/Reportes/components/ReporteMatrizControl";
 import WhatsAppMain from "./modules/WhatsApp/pages/WhatsAppMain";
 import NotificacionesMain from "./modules/Administracion/Notificaciones/components/NotificacionesMain";
 import PrestamosExternosPage from "./modules/PrestamosExternos/pages/PrestamosExternosPage";
@@ -138,6 +139,7 @@ export default function App() {
                   <Route path="compras" element={<ReporteComprasRango />} />
                   <Route path="inventario" element={<ReporteInventario />} />
                   <Route path="productividad" element={<ReporteProductividad />} />
+                  <Route path="matriz-control" element={<ReporteMatrizControl />} />
                 </Route>
 
                 {/* Usuarios y Notificaciones (Administracion) */}

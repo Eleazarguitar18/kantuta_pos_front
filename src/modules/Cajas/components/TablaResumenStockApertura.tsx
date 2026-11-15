@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Package, AlertCircle } from "lucide-react";
+import NumberInput from "../../../components/form/input/NumberInput";
 import { CajasService } from "../services/cajasService";
 
 export interface ItemStock {
@@ -110,9 +111,10 @@ const TablaResumenStockApertura: React.FC<Props> = ({ onStockChange, disabled = 
                     {item.stockSistema}
                   </td>
                   <td className="px-4 py-2 text-center">
-                    <input
-                      type="number"
-                      min="0"
+                    <NumberInput
+                      decimals={0}
+                      value={item.stockFisico}
+                      onValueChange={(v) => handleMontoChange(item.id, v === null ? "" : String(v))}
                       className={`w-20 text-center rounded-md border py-1 px-2 text-sm outline-none focus:ring-2 ${
                         hayFaltante 
                           ? "border-red-300 focus:ring-red-500/20 text-red-700 bg-red-50" 
@@ -120,8 +122,6 @@ const TablaResumenStockApertura: React.FC<Props> = ({ onStockChange, disabled = 
                           ? "border-blue-300 focus:ring-blue-500/20 text-blue-700 bg-blue-50" 
                           : "border-gray-300 focus:ring-emerald-500/20 dark:border-gray-600 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       }`}
-                      value={item.stockFisico === 0 && item.stockSistema > 0 && item.stockFisico !== 0 ? "" : item.stockFisico} // bit hacky to show placeholder, let's just use value
-                      onChange={(e) => handleMontoChange(item.id, e.target.value)}
                       disabled={disabled}
                     />
                   </td>
