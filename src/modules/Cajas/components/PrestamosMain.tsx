@@ -6,6 +6,7 @@ import ComponentCard from '../../../components/common/ComponentCard';
 import Button from '../../../components/ui/button/Button';
 import Label from '../../../components/form/Label';
 import Input from '../../../components/form/input/InputField';
+import { NumberField } from '../../../components/form/input/NumberInput';
 import { useCaja } from '../../../context/CajaContext';
 import { useAuth } from '../../../context/auth/AuthContext';
 import Swal from 'sweetalert2';
@@ -198,13 +199,10 @@ export const PrestamosMain: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Monto a Retirar (Bs.) *</Label>
-                  <Input
-                    type="number"
-                    step={0.10}
-                    min="0.10"
-                    placeholder="0.00"
-                    value={monto || ''}
-                    onChange={(e) => setMonto(parseFloat(e.target.value) || 0)}
+                  <NumberField
+                    placeholder="0,00"
+                    value={monto}
+                    onValueChange={(v) => setMonto(v ?? 0)}
                     disabled={!sesionActiva}
                   />
                 </div>

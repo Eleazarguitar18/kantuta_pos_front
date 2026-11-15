@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { OperadoraNombre, CreateInyeccionDto } from '../types';
 import { RecargasService } from '../api/RecargasService';
 import { useRecargasAlerts } from '../hooks/useRecargasAlerts';
+import NumberInput from '../../../components/form/input/NumberInput';
 
 interface FormInyeccionMayoristaProps {
   onSuccess: () => void;
@@ -66,14 +67,12 @@ export const FormInyeccionMayorista: React.FC<FormInyeccionMayoristaProps> = ({ 
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Monto a Inyectar (Bs.)</label>
-          <input 
-            type="number" 
-            step="1"
-            min="10"
+          <NumberInput
+            decimals={2}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="0.00"
-            value={formData.monto || ''}
-            onChange={(e) => setFormData({...formData, monto: Number(e.target.value)})}
+            placeholder="0,00"
+            value={formData.monto}
+            onValueChange={(v) => setFormData({...formData, monto: v ?? 0})}
             required
             disabled={!idCajaSesion}
           />

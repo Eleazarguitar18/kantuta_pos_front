@@ -4,6 +4,7 @@ import Button from "../../../components/ui/button/Button";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
 import Label from "../../../components/form/Label";
 import Input from "../../../components/form/input/InputField";
+import { NumberField } from "../../../components/form/input/NumberInput";
 import Select from "../../../components/form/Select";
 import { RecargasService } from "../../Cajas/services/recargasService";
 import Alert from "../../../components/ui/alert/Alert";
@@ -224,12 +225,10 @@ const RecargasMain = () => {
               <div>
                 <Label>Monto (Bs.)</Label>
                 <div className="space-y-3">
-                  <Input
-                    type="number"
-                    step={1}
-                    min="1"
-                    value={montoRecarga || ""}
-                    onChange={(e) => setMontoRecarga(Number(e.target.value))}
+                  <NumberField
+                    decimals={0}
+                    value={montoRecarga}
+                    onValueChange={(v) => setMontoRecarga(v ?? 0)}
                     placeholder="Monto de la transacción"
                   />
                   <div className="flex gap-2">

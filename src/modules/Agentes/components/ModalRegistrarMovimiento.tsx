@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Modal } from "../../../components/ui/modal";
 import Label from "../../../components/form/Label";
 import Input from "../../../components/form/input/InputField";
+import { NumberField } from "../../../components/form/input/NumberInput";
 import Button from "../../../components/ui/button/Button";
 import Select from "../../../components/form/Select";
 import { PlusCircle, RefreshCw, ArrowUpRight, ArrowDownLeft, User } from "lucide-react";
@@ -385,17 +386,11 @@ export const ModalRegistrarMovimiento: React.FC<ModalRegistrarMovimientoProps> =
           {/* MONTO */}
           <div>
             <Label htmlFor="monto_transaccion">Monto (Bs.) *</Label>
-            <Input
+            <NumberField
               id="monto_transaccion"
-              type="number"
-              step={0.10}
-              min="0.10"
-              placeholder="0.00"
+              placeholder="0,00"
               value={monto}
-              onChange={(e) => {
-                const val = e.target.value;
-                setMonto(val === "" ? "" : parseFloat(val) || 0);
-              }}
+              onValueChange={(v) => setMonto(v === null ? "" : v)}
               className="text-lg font-black text-indigo-600 dark:text-indigo-400"
               required
               disabled={isSubmitting}

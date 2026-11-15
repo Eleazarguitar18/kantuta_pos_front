@@ -92,7 +92,7 @@ export default function DescuadresResponsabilidades() {
         html: `
           <div style="text-align:left;font-size:13px;display:grid;gap:10px">
             <label for="swal-monto" style="font-weight:600;color:#374151">Monto recuperado (Bs)</label>
-            <input id="swal-monto" type="number" min="0" step="0.01" class="swal2-input" style="margin:0;width:100%" value="${deudaEstimada.toFixed(2)}" />
+            <input id="swal-monto" type="text" inputmode="decimal" class="swal2-input" style="margin:0;width:100%" value="${deudaEstimada.toFixed(2)}" />
             <label for="swal-fecha" style="font-weight:600;color:#374151">Fecha de recuperación</label>
             <input id="swal-fecha" type="date" class="swal2-input" style="margin:0;width:100%" value="${fechaDefault}" />
             <label for="swal-observacion" style="font-weight:600;color:#374151">Nota o comprobante (opcional)</label>
@@ -106,7 +106,9 @@ export default function DescuadresResponsabilidades() {
         confirmButtonColor: "#10B981",
         preConfirm: () => {
           const monto = Number(
-            (document.getElementById("swal-monto") as HTMLInputElement | null)?.value,
+            (document.getElementById("swal-monto") as HTMLInputElement | null)
+              ?.value.replace(/\s/g, "")
+              .replace(",", "."),
           );
           const fecha = (
             document.getElementById("swal-fecha") as HTMLInputElement | null

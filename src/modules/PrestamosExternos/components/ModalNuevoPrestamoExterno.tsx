@@ -3,6 +3,7 @@ import Swal from "sweetalert2";
 import Label from "../../../components/form/Label";
 import Select from "../../../components/form/Select";
 import Input from "../../../components/form/input/InputField";
+import { NumberField } from "../../../components/form/input/NumberInput";
 import TextArea from "../../../components/form/input/TextArea";
 import Button from "../../../components/ui/button/Button";
 import { Modal } from "../../../components/ui/modal";
@@ -156,13 +157,10 @@ const ModalNuevoPrestamoExterno: React.FC<ModalNuevoPrestamoExternoProps> = ({
 
         <div>
           <Label>Monto en Bs. *</Label>
-          <Input
-            type="number"
-            min="0.01"
-            step="0.01"
-            placeholder="0.00"
+          <NumberField
+            placeholder="0,00"
             value={monto}
-            onChange={(event) => setMonto(event.target.value)}
+            onValueChange={(v) => setMonto(v === null ? "" : String(v))}
             disabled={enviando}
           />
         </div>

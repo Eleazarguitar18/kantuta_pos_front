@@ -4,6 +4,7 @@ import Button from "../../../components/ui/button/Button";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
 import Label from "../../../components/form/Label";
 import Input from "../../../components/form/input/InputField";
+import { NumberField } from "../../../components/form/input/NumberInput";
 import Select from "../../../components/form/Select";
 import { CajasService } from "../services/cajasService";
 import Alert from "../../../components/ui/alert/Alert";
@@ -557,13 +558,10 @@ const CajasControl = () => {
 
             <div>
               <Label>Monto (Bs.)</Label>
-              <Input
-                type="number"
-                step={0.10}
-                min="0.10"
+              <NumberField
                 value={montoMovimiento}
-                onChange={(e) => setMontoMovimiento(Number(e.target.value))}
-                placeholder="0.00"
+                onValueChange={(v) => setMontoMovimiento(v ?? 0)}
+                placeholder="0,00"
               />
             </div>
 

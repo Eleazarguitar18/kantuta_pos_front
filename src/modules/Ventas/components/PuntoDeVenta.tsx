@@ -16,6 +16,7 @@ import { useModal } from "../../../hooks/useModal";
 import { useAuth } from "../../../context/auth/AuthContext";
 import { useSocket } from "../../../context/SocketContext";
 import Swal from "sweetalert2";
+import NumberInput from "../../../components/form/input/NumberInput";
 
 interface CartItem extends DetalleVentaInput {
   producto_nombre: string;
@@ -472,13 +473,11 @@ const PuntoDeVenta = () => {
                           }
                         }}
                       >-</button>
-                      <input
-                        type="number"
-                        value={item.cantidad || ""}
-                        min="1"
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === "") {
+                      <NumberInput
+                        decimals={0}
+                        value={item.cantidad}
+                        onValueChange={(v) => {
+                          if (v === null) {
                             Swal.fire({
                               title: "Cantidad Vacía",
                               text: "No puede dejar el campo de cantidad vacío.",
@@ -487,10 +486,7 @@ const PuntoDeVenta = () => {
                             });
                             updateQuantity(item.id_producto, 1);
                           } else {
-                            const newQty = parseInt(val);
-                            if (!isNaN(newQty)) {
-                              updateQuantity(item.id_producto, newQty);
-                            }
+                            updateQuantity(item.id_producto, v);
                           }
                         }}
                         className="w-12 text-center text-sm border-x border-gray-200 dark:border-gray-700 bg-transparent focus:outline-none"

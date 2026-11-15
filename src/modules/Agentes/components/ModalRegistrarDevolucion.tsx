@@ -4,6 +4,7 @@ import { HandCoins, RefreshCw } from "lucide-react";
 import { Modal } from "../../../components/ui/modal";
 import Label from "../../../components/form/Label";
 import Input from "../../../components/form/input/InputField";
+import { NumberField } from "../../../components/form/input/NumberInput";
 import TextArea from "../../../components/form/input/TextArea";
 import Button from "../../../components/ui/button/Button";
 import { TransaccionAgente } from "../interfaces/Agente";
@@ -153,13 +154,9 @@ const ModalRegistrarDevolucion: React.FC<ModalRegistrarDevolucionProps> = ({
 
         <div>
           <Label>Monto a devolver (Bs.) *</Label>
-          <Input
-            type="number"
-            step={0.1}
-            min="0.10"
-            max={saldoPendiente || undefined}
+          <NumberField
             value={monto}
-            onChange={(event) => setMonto(event.target.value === "" ? "" : Number(event.target.value))}
+            onValueChange={(v) => setMonto(v === null ? "" : v)}
             disabled={isSubmitting}
           />
         </div>
