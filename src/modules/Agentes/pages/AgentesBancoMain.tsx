@@ -358,6 +358,7 @@ const AgentesBancoMain: React.FC = () => {
     return operadores.filter(
       (op) =>
         op.nombre_operador.toLowerCase().includes(term) ||
+        (op.motivo && op.motivo.toLowerCase().includes(term)) ||
         (op.telefono && op.telefono.includes(term)) ||
         (op.ci && op.ci.includes(term))
     );
@@ -776,11 +777,12 @@ const AgentesBancoMain: React.FC = () => {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="min-w-[720px] w-full text-left text-xs">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 uppercase text-[11px]">
                       <th className="py-3 px-3">Operador</th>
                       <th className="py-3 px-3 text-right">Monto Pendiente</th>
+                      <th className="py-3 px-3">Motivo / Observación</th>
                       <th className="py-3 px-3 text-center">Estado</th>
                       <th className="py-3 px-3 text-right">Acciones Rápidas</th>
                     </tr>
@@ -822,6 +824,12 @@ const AgentesBancoMain: React.FC = () => {
                             >
                               Bs. {formatMonto(deuda)}
                             </span>
+                          </td>
+
+                          <td className="py-3 px-3">
+                            <p className="max-w-[260px] text-[11px] text-gray-600 dark:text-gray-300">
+                              {op.motivo?.trim() || "Sin motivo registrado"}
+                            </p>
                           </td>
 
                           <td className="py-3 px-3 text-center">
