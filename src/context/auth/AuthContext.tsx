@@ -64,17 +64,27 @@ export function AuthContextProvider({
     localStorage.setItem("refresh_token", refreshToken);
     localStorage.setItem("user", JSON.stringify(newUser));
   };
-  const logoutStorage = () => {
+  const clearAuth = () => {
     setToken(null);
     setUser(null);
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
-    // El host estático (Render) no sirve rutas profundas como /signin en una
-    // recarga directa y devuelve su propia página 404. Volvemos a "/" y el
-    // ProtectedRoute redirige al login en el cliente, sin nueva petición.
+  };
+
+  const logoutStorage = () => {
+    clearAuth();
+    // Ruta limpia: volvemos siempre a la principal. ProtectedRoute muestra
+    // el login en "/" cuando no hay sesión, sin navegar a /signin.
     window.location.replace("/");
   };
+
+  useEffect(() => {
+    const handleUnauthorized = () => clearAuth();
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    return () =>
+      window.removeEventListener("auth:unauthorized", handleUnauthorized);
+  }, []);
 
   useEffect(() => {
     const currentToken = localStorage.getItem("access_token");

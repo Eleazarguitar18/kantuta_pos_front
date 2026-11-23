@@ -16,15 +16,10 @@ axios.interceptors.response.use(
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("user");
-      // En recarga directa, el host estático no conoce /signin y responde 404.
-      // Si ya estamos en una ruta pública de auth, no recargamos para no
-      // perder el mensaje de error del formulario de login.
-      const publicAuthRoutes = ["/signin", "/signup", "/reset-password"];
-      const rutaActual =
-        window.location.hash.replace(/^#/, "") || window.location.pathname;
-      if (!publicAuthRoutes.includes(rutaActual)) {
-        window.location.replace("/");
-      }
+      // Avisamos al AuthContext para que limpie el estado sin recargar la
+      // página: así no se pierde el mensaje de error del login y el router
+      // lleva al usuario a la ruta limpia "/" de forma interna.
+      window.dispatchEvent(new Event("auth:unauthorized"));
     }
     return Promise.reject(error);
   }
