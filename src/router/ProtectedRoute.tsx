@@ -1,12 +1,18 @@
-import { Navigate, Outlet } from "react-router";
+import { Navigate, Outlet, useLocation } from "react-router";
 import { useAuth } from "../context/auth/AuthContext";
+import SignIn from "../pages/AuthPages/SignIn";
 
 export default function ProtectedRoute({ allowedRoles }: { allowedRoles?: string[] }) {
   const { isAuthenticated, user } = useAuth();
+  const location = useLocation();
 
   if (!isAuthenticated) {
-    // Si no hay sesión iniciada, redirige forzosamente a SignIn
-    return <Navigate to="/signin" replace />;
+    // Sin sesión: la principal muestra el login con URL limpia "/".
+    // Desde cualquier otra ruta volvemos a la principal de forma interna.
+    if (location.pathname === "/") {
+      return <SignIn />;
+    }
+    return <Navigate to="/" replace />;
   }
 
   if (allowedRoles && user) {
@@ -44,7 +50,7 @@ export default function ProtectedRoute({ allowedRoles }: { allowedRoles?: string
 
     // CONTROL DE AUDITORÍA EN CONSOLA (F12)
     console.log("🔒 [Guard de Rutas]", {
-      Ruta_Destino: window.location.hash || window.location.pathname,
+      Ruta_Destino: window.location.pathname,
       Rol_Detectado: normalizedRole,
       Roles_Permitidos: normalizedAllowedRoles,
       Acceso_Concedido: normalizedAllowedRoles.includes(normalizedRole)

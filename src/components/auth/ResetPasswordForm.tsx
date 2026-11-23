@@ -67,7 +67,7 @@ export default function ResetPasswordForm() {
     try {
       await axios.post(`${API_BASE_URL}/auth/reset-confirm`, { email, newPassword });
       setSuccessMsg("Contraseña actualizada exitosamente.");
-      setTimeout(() => navigate("/signin"), 2000);
+      setTimeout(() => navigate("/"), 2000);
     } catch (error: any) {
       setErrorMsg(error.response?.data?.message || "Error al cambiar contraseña");
     } finally {
@@ -152,7 +152,7 @@ export default function ResetPasswordForm() {
             )}
 
             <div className="mt-5 text-center">
-              <Link to="/signin" className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400">
+              <Link to="/" className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400">
                 Volver a Iniciar Sesión
               </Link>
             </div>
