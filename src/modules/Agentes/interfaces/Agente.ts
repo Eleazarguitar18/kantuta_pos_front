@@ -44,6 +44,8 @@ export interface OperadorDeuda {
   id_agente?: number;
   nombre_operador: string;
   monto_pendiente: number;
+  /** Motivo / observación registrada al otorgar el préstamo */
+  motivo?: string;
   telefono?: string;
   ci?: string;
   ultima_transaccion?: string;
