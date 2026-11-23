@@ -20,7 +20,9 @@ axios.interceptors.response.use(
       // Si ya estamos en una ruta pública de auth, no recargamos para no
       // perder el mensaje de error del formulario de login.
       const publicAuthRoutes = ["/signin", "/signup", "/reset-password"];
-      if (!publicAuthRoutes.includes(window.location.pathname)) {
+      const rutaActual =
+        window.location.hash.replace(/^#/, "") || window.location.pathname;
+      if (!publicAuthRoutes.includes(rutaActual)) {
         window.location.replace("/");
       }
     }

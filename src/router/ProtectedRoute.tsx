@@ -44,7 +44,7 @@ export default function ProtectedRoute({ allowedRoles }: { allowedRoles?: string
 
     // CONTROL DE AUDITORÍA EN CONSOLA (F12)
     console.log("🔒 [Guard de Rutas]", {
-      Ruta_Destino: window.location.pathname,
+      Ruta_Destino: window.location.hash || window.location.pathname,
       Rol_Detectado: normalizedRole,
       Roles_Permitidos: normalizedAllowedRoles,
       Acceso_Concedido: normalizedAllowedRoles.includes(normalizedRole)
