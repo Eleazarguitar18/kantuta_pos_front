@@ -1,4 +1,6 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router";
+// HashRouter evita que el servidor estático reciba peticiones a rutas profundas
+// (/signin, /agentes, ...): Render solo sirve "/" y devuelve 404 para el resto.
+import { HashRouter as Router, Routes, Route } from "react-router";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import ResetPassword from "./pages/AuthPages/ResetPassword";
