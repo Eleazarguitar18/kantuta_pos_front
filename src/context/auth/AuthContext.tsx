@@ -70,7 +70,10 @@ export function AuthContextProvider({
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
-    window.location.href = "/signin";
+    // El host estático (Render) no sirve rutas profundas como /signin en una
+    // recarga directa y devuelve su propia página 404. Volvemos a "/" y el
+    // ProtectedRoute redirige al login en el cliente, sin nueva petición.
+    window.location.replace("/");
   };
 
   useEffect(() => {
