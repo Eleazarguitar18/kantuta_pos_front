@@ -369,13 +369,17 @@ const AgentesBancoMain: React.FC = () => {
   }, [operadores]);
 
   const obtenerPersonaLlevo = (transaccion: TransaccionAgente) =>
+    transaccion.persona_retiro ||
     transaccion.persona_llevo ||
     transaccion.persona_que_llevo ||
     transaccion.nombre_operador ||
     "No especificado";
 
   const obtenerPersonaDevolvio = (transaccion: TransaccionAgente) =>
-    transaccion.persona_devolvio || transaccion.persona_que_devolvio || "";
+    transaccion.persona_devolucion ||
+    transaccion.persona_devolvio ||
+    transaccion.persona_que_devolvio ||
+    "";
 
   const obtenerSaldoPendiente = (transaccion: TransaccionAgente) => {
     const saldoBackend = transaccion.saldo_pendiente ?? transaccion.monto_pendiente;

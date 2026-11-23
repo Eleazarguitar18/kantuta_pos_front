@@ -19,6 +19,7 @@ interface ModalRegistrarDevolucionProps {
 }
 
 const obtenerPersonaLlevo = (transaccion: TransaccionAgente | null) =>
+  transaccion?.persona_retiro ||
   transaccion?.persona_llevo ||
   transaccion?.persona_que_llevo ||
   transaccion?.nombre_operador ||

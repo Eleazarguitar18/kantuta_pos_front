@@ -112,38 +112,47 @@ export const AgentesService = {
     });
   },
 
-  // Registrar devolución parcial o total de un retiro/préstamo vinculado
+  // Registrar devolución parcial o total de un retiro/préstamo vinculado.
+  // El backend exige persona_devolucion / descripcion / id_user_create.
   async registrarDevolucionTransaccion(
     id: number | string,
-    data: { persona_devolvio: string; monto: number; observacion?: string },
+    data: {
+      persona_devolvio: string;
+      monto: number;
+      observacion?: string;
+      destino?: "EFECTIVO" | "BANCO";
+    },
   ) {
+    const persona = data.persona_devolvio.trim();
+    const descripcion = data.observacion?.trim();
+
     return await axios.patch<TransaccionAgente>(
       `${API_BASE_URL}/agentes/transacciones/${id}/devolucion`,
       {
-        persona_devolvio: data.persona_devolvio.trim(),
-        persona_que_devolvio: data.persona_devolvio.trim(),
         monto: Number(data.monto) || 0,
-        monto_devuelto: Number(data.monto) || 0,
-        observacion: data.observacion?.trim() || undefined,
-        observacion_devolucion: data.observacion?.trim() || undefined,
-        id_user_update: getUserId(),
+        persona_devolucion: persona,
+        ...(descripcion ? { descripcion } : {}),
+        ...(data.destino ? { destino: data.destino } : {}),
+        id_user_create: getUserId(),
       },
       { headers: getHeaders() },
     );
   },
 
-  // Corregir nombres libres asociados al retiro/devolución por errores de digitación
+  // Corregir nombres libres asociados al retiro/devolución por errores de digitación.
+  // El backend exige persona_retiro / persona_devolucion / id_user_update.
   async editarPersonaMovimiento(
     id: number | string,
     data: { persona_llevo?: string; persona_devolvio?: string },
   ) {
+    const personaRetiro = data.persona_llevo?.trim();
+    const personaDevolucion = data.persona_devolvio?.trim();
+
     return await axios.patch<TransaccionAgente>(
       `${API_BASE_URL}/agentes/transacciones/${id}/persona`,
       {
-        persona_llevo: data.persona_llevo?.trim() || undefined,
-        persona_que_llevo: data.persona_llevo?.trim() || undefined,
-        persona_devolvio: data.persona_devolvio?.trim() || undefined,
-        persona_que_devolvio: data.persona_devolvio?.trim() || undefined,
+        ...(personaRetiro ? { persona_retiro: personaRetiro } : {}),
+        ...(personaDevolucion ? { persona_devolucion: personaDevolucion } : {}),
         id_user_update: getUserId(),
       },
       { headers: getHeaders() },
@@ -151,12 +160,19 @@ export const AgentesService = {
   },
 
   // Ajustar capital total del banco seleccionado. Acción exclusiva de Administrador en UI.
-  async ajustarCapitalBanco(id: number | string, monto_total: number) {
+  async ajustarCapitalBanco(
+    id: number | string,
+    monto_total: number,
+    motivo: string,
+    destino_ajuste?: "EFECTIVO" | "BANCO",
+  ) {
     return await axios.patch<AgenteBanco>(
       `${API_BASE_URL}/agentes/bancos/${id}/capital`,
       {
         monto_total: Number(monto_total) || 0,
-        id_user_update: getUserId(),
+        motivo: String(motivo || "").trim(),
+        id_admin: getUserId(),
+        ...(destino_ajuste ? { destino_ajuste } : {}),
       },
       { headers: getHeaders() },
     );
@@ -190,12 +206,10 @@ export const AgentesService = {
       ...(payload.nombre_operador && payload.nombre_operador.trim()
         ? { nombre_operador: payload.nombre_operador.trim() }
         : {}),
-      ...(payload.persona_llevo && payload.persona_llevo.trim()
-        ? {
-            persona_llevo: payload.persona_llevo.trim(),
-            persona_que_llevo: payload.persona_llevo.trim(),
-          }
-        : {}),
+      ...(() => {
+        const personaRetiro = (payload.persona_retiro ?? payload.persona_llevo)?.trim();
+        return personaRetiro ? { persona_retiro: personaRetiro } : {};
+      })(),
       ...(userId ? { id_user_create: userId } : {}),
     };
 

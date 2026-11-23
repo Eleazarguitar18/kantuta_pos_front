@@ -16,10 +16,17 @@ interface ModalEditarPersonaMovimientoProps {
 }
 
 const obtenerPersonaLlevo = (transaccion: TransaccionAgente | null) =>
-  transaccion?.persona_llevo || transaccion?.persona_que_llevo || transaccion?.nombre_operador || "";
+  transaccion?.persona_retiro ||
+  transaccion?.persona_llevo ||
+  transaccion?.persona_que_llevo ||
+  transaccion?.nombre_operador ||
+  "";
 
 const obtenerPersonaDevolvio = (transaccion: TransaccionAgente | null) =>
-  transaccion?.persona_devolvio || transaccion?.persona_que_devolvio || "";
+  transaccion?.persona_devolucion ||
+  transaccion?.persona_devolvio ||
+  transaccion?.persona_que_devolvio ||
+  "";
 
 const ModalEditarPersonaMovimiento: React.FC<ModalEditarPersonaMovimientoProps> = ({
   isOpen,
