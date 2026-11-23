@@ -16,7 +16,13 @@ axios.interceptors.response.use(
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("user");
-      window.location.href = "/signin";
+      // En recarga directa, el host estático no conoce /signin y responde 404.
+      // Si ya estamos en una ruta pública de auth, no recargamos para no
+      // perder el mensaje de error del formulario de login.
+      const publicAuthRoutes = ["/signin", "/signup", "/reset-password"];
+      if (!publicAuthRoutes.includes(window.location.pathname)) {
+        window.location.replace("/");
+      }
     }
     return Promise.reject(error);
   }
