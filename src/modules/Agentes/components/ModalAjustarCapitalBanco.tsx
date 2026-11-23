@@ -4,6 +4,7 @@ import { PieChart, RefreshCw } from "lucide-react";
 import { Modal } from "../../../components/ui/modal";
 import Label from "../../../components/form/Label";
 import Input from "../../../components/form/input/InputField";
+import Select from "../../../components/form/Select";
 import { NumberField } from "../../../components/form/input/NumberInput";
 import Button from "../../../components/ui/button/Button";
 import { AgenteBanco } from "../interfaces/Agente";
@@ -25,12 +26,14 @@ const ModalAjustarCapitalBanco: React.FC<ModalAjustarCapitalBancoProps> = ({
 }) => {
   const [montoTotal, setMontoTotal] = useState<number | "">("");
   const [motivo, setMotivo] = useState("");
+  const [destinoAjuste, setDestinoAjuste] = useState<"EFECTIVO" | "BANCO">("BANCO");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
     setMontoTotal(Number(banco?.monto_total || 0));
     setMotivo("");
+    setDestinoAjuste("BANCO");
   }, [isOpen, banco]);
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -54,7 +57,7 @@ const ModalAjustarCapitalBanco: React.FC<ModalAjustarCapitalBancoProps> = ({
 
     const confirmacion = await Swal.fire({
       title: "¿Ajustar capital total?",
-      text: `El capital de ${banco.nombre_banco} cambiará a Bs. ${formatMonto(montoNum)}.`,
+      text: `El capital de ${banco.nombre_banco} cambiará a Bs. ${formatMonto(montoNum)}. La diferencia se aplicará a ${destinoAjuste === "EFECTIVO" ? "efectivo en caja" : "saldo bancario"}.`,
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#4f46e5",
@@ -67,7 +70,12 @@ const ModalAjustarCapitalBanco: React.FC<ModalAjustarCapitalBancoProps> = ({
 
     setIsSubmitting(true);
     try {
-      await AgentesService.ajustarCapitalBanco(banco.id, montoNum, motivo.trim());
+      await AgentesService.ajustarCapitalBanco(
+        banco.id,
+        montoNum,
+        motivo.trim(),
+        destinoAjuste,
+      );
       await Swal.fire({
         icon: "success",
         title: "Capital actualizado",
@@ -105,6 +113,8 @@ const ModalAjustarCapitalBanco: React.FC<ModalAjustarCapitalBancoProps> = ({
         <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-800 dark:border-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-300">
           <p><strong>Banco:</strong> {banco?.nombre_banco || "Sin banco seleccionado"}</p>
           <p><strong>Capital actual:</strong> Bs. {formatMonto(banco?.monto_total)}</p>
+          <p><strong>Efectivo:</strong> Bs. {formatMonto(banco?.monto_efectivo)}</p>
+          <p><strong>Saldo bancario:</strong> Bs. {formatMonto(banco?.monto_banco)}</p>
         </div>
 
         <div>
@@ -127,6 +137,23 @@ const ModalAjustarCapitalBanco: React.FC<ModalAjustarCapitalBancoProps> = ({
           />
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             El motivo queda registrado en la auditoría del banco.
+          </p>
+        </div>
+
+        <div>
+          <Label>Destino del ajuste *</Label>
+          <Select
+            value={destinoAjuste}
+            onChange={(value) => setDestinoAjuste(value as "EFECTIVO" | "BANCO")}
+            options={[
+              { value: "BANCO", label: "Saldo bancario" },
+              { value: "EFECTIVO", label: "Efectivo en caja" },
+            ]}
+            disabled={isSubmitting}
+          />
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            La diferencia entre el capital nuevo y el actual se aplica a este componente.
+            El backend rechaza el ajuste si deja el componente seleccionado en negativo.
           </p>
         </div>
 
