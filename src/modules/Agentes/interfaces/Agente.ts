@@ -77,6 +77,10 @@ export interface TransaccionAgente extends BaseEntityAudit {
   fecha: string;
   id_sesion_caja?: number;
   fecha_devolucion?: string;
+  /** Campos reales del backend */
+  persona_retiro?: string;
+  persona_devolucion?: string;
+  /** Alias legados (solo lectura, respuestas antiguas) */
   persona_llevo?: string;
   persona_que_llevo?: string;
   persona_devolvio?: string;
@@ -102,6 +106,8 @@ export interface RegistrarTransaccionAgenteDTO {
   motivo?: string;
   observacion?: string;
   nombre_operador?: string;
+  persona_retiro?: string;
+  /** @deprecated usar persona_retiro */
   persona_llevo?: string;
   id_user_create?: number;
 }

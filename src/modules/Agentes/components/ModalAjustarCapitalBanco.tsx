@@ -3,6 +3,7 @@ import Swal from "sweetalert2";
 import { PieChart, RefreshCw } from "lucide-react";
 import { Modal } from "../../../components/ui/modal";
 import Label from "../../../components/form/Label";
+import Input from "../../../components/form/input/InputField";
 import { NumberField } from "../../../components/form/input/NumberInput";
 import Button from "../../../components/ui/button/Button";
 import { AgenteBanco } from "../interfaces/Agente";
@@ -23,11 +24,13 @@ const ModalAjustarCapitalBanco: React.FC<ModalAjustarCapitalBancoProps> = ({
   onCapitalActualizado,
 }) => {
   const [montoTotal, setMontoTotal] = useState<number | "">("");
+  const [motivo, setMotivo] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
     setMontoTotal(Number(banco?.monto_total || 0));
+    setMotivo("");
   }, [isOpen, banco]);
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -37,6 +40,15 @@ const ModalAjustarCapitalBanco: React.FC<ModalAjustarCapitalBancoProps> = ({
     const montoNum = Number(montoTotal);
     if (Number.isNaN(montoNum) || montoNum < 0) {
       Swal.fire("Monto inválido", "Ingrese un capital total válido.", "warning");
+      return;
+    }
+
+    if (!motivo.trim()) {
+      Swal.fire(
+        "Motivo requerido",
+        "Indique el motivo del ajuste de capital.",
+        "warning",
+      );
       return;
     }
 
@@ -55,7 +67,7 @@ const ModalAjustarCapitalBanco: React.FC<ModalAjustarCapitalBancoProps> = ({
 
     setIsSubmitting(true);
     try {
-      await AgentesService.ajustarCapitalBanco(banco.id, montoNum);
+      await AgentesService.ajustarCapitalBanco(banco.id, montoNum, motivo.trim());
       await Swal.fire({
         icon: "success",
         title: "Capital actualizado",
@@ -105,11 +117,24 @@ const ModalAjustarCapitalBanco: React.FC<ModalAjustarCapitalBancoProps> = ({
           />
         </div>
 
+        <div>
+          <Label>Motivo del ajuste *</Label>
+          <Input
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            placeholder="Ej. Corrección autorizada por arqueo administrativo"
+            disabled={isSubmitting}
+          />
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            El motivo queda registrado en la auditoría del banco.
+          </p>
+        </div>
+
         <div className="flex justify-end gap-3 border-t border-gray-200 pt-3 dark:border-gray-700">
           <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={isSubmitting || montoTotal === ""} className="bg-red-600 font-bold text-white hover:bg-red-700">
+          <Button type="submit" disabled={isSubmitting || montoTotal === "" || !motivo.trim()} className="bg-red-600 font-bold text-white hover:bg-red-700">
             {isSubmitting ? <RefreshCw className="h-4 w-4 animate-spin" /> : null}
             Guardar Capital
           </Button>

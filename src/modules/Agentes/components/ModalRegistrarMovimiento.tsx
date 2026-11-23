@@ -221,7 +221,7 @@ export const ModalRegistrarMovimiento: React.FC<ModalRegistrarMovimientoProps> =
             motivo: motivoLimpio,
             observacion: motivoLimpio,
             nombre_operador: nombreOpFinal,
-            persona_llevo: nombreOpFinal,
+            persona_retiro: nombreOpFinal,
           };
 
           await AgentesService.registrarTransaccionAgente(payload);
