@@ -25,6 +25,16 @@ axios.interceptors.response.use(
   }
 );
 
+// En producción, el service worker evita el 404 de Render al recargar rutas
+// del router (/agentes, /signin, ...). En desarrollo Vite ya las sirve.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch((error) => {
+      console.error("No se pudo registrar el service worker:", error);
+    });
+  });
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider>
