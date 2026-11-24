@@ -4,6 +4,8 @@ import ComponentCard from "../../../components/common/ComponentCard";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
 import Button from "../../../components/ui/button/Button";
 import { CheckCircle2, HandCoins, Plus, WalletCards } from "lucide-react";
+import { useCaja } from "../../../context/CajaContext";
+import { useSocket } from "../../../context/SocketContext";
 import ModalNuevoPrestamoExterno from "../components/ModalNuevoPrestamoExterno";
 import TablaPrestamosExternos from "../components/TablaPrestamosExternos";
 import { PrestamoExterno, PrestamosExternosService } from "../services/prestamosExternosService";
@@ -16,6 +18,8 @@ const PrestamosExternosPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [procesandoPago, setProcesandoPago] = useState(false);
+  const { sesionActiva, loading: cargandoCaja } = useCaja();
+  const socket = useSocket();
 
   const cargarPrestamos = useCallback(async () => {
     try {
@@ -37,6 +41,33 @@ const PrestamosExternosPage: React.FC = () => {
   useEffect(() => {
     cargarPrestamos();
   }, [cargarPrestamos]);
+
+  // El listado también se sincroniza en tiempo real cuando otro cliente
+  // registra o paga un préstamo externo.
+  useEffect(() => {
+    const handleDataChanged = (data: { entity: string; action: string }) => {
+      if (data.entity === "prestamo_externo") {
+        cargarPrestamos();
+      }
+    };
+
+    socket.on("dataChanged", handleDataChanged);
+    return () => {
+      socket.off("dataChanged", handleDataChanged);
+    };
+  }, [socket, cargarPrestamos]);
+
+  const handleAbrirModal = () => {
+    if (!sesionActiva) {
+      Swal.fire({
+        icon: "warning",
+        title: "Caja cerrada",
+        text: "Debe abrir una caja con sesión activa para registrar un préstamo externo.",
+      });
+      return;
+    }
+    setModalAbierto(true);
+  };
 
   const resumen = useMemo(() => {
     const pendientes = prestamos.filter((prestamo) => obtenerEstado(prestamo) === "PENDIENTE");
@@ -99,9 +130,18 @@ const PrestamosExternosPage: React.FC = () => {
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Registre, consulte y liquide préstamos de caja realizados a personas externas.
+            {!cargandoCaja && !sesionActiva && (
+              <span className="mt-1 block font-semibold text-amber-600 dark:text-amber-400">
+                Abra una caja para poder registrar préstamos.
+              </span>
+            )}
           </p>
         </div>
-        <Button onClick={() => setModalAbierto(true)} className="bg-orange-600 font-bold text-white hover:bg-orange-700">
+        <Button
+          onClick={handleAbrirModal}
+          disabled={cargandoCaja || !sesionActiva}
+          className="bg-orange-600 font-bold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
           <Plus className="h-5 w-5" />
           Registrar Préstamo Externo
         </Button>

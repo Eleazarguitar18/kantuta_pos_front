@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useSidebar } from "../context/SidebarContext";
 // import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
@@ -32,11 +32,10 @@ const AppHeader: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Fetch balance for the active session
-  const fetchBalance = async () => {
+  const fetchBalance = useCallback(async () => {
     if (sesionActiva?.id) {
       try {
         const response = await CajasService.getSesionBalance(sesionActiva.id);
-        console.log("Balance actual: ", response.data);
         if (response && response.data !== undefined && response.data !== null) {
           const val = typeof response.data === "object" ? response.data.monto_final_teorico ?? response.data : response.data;
           setSaldoActual(Number(val) || 0);
@@ -47,7 +46,7 @@ const AppHeader: React.FC = () => {
     } else {
       setSaldoActual(null);
     }
-  };
+  }, [sesionActiva?.id]);
 
   useEffect(() => {
     checkSesion();
@@ -55,23 +54,22 @@ const AppHeader: React.FC = () => {
 
   useEffect(() => {
     fetchBalance();
-  }, [sesionActiva]);
+  }, [fetchBalance]);
 
   // 🔥 CORRECCIÓN: Escuchar todas las mutaciones críticas de la caja
   useEffect(() => {
     const handleDataChanged = async (data: { entity: string; action: string }) => {
-      if (data.entity === "caja") {
-        console.log(`📡 WebSocket detectado en Header: ${data.action}`);
+      if (data.entity !== "caja") return;
 
-        // Si abren, cierran o mueven dinero, recalculamos balance
-        if (
-          data.action === "saldo_actualizado" ||
-          data.action === "CAJA_ABIERTA" ||
-          data.action === "CAJA_CERRADA"
-        ) {
-          await checkSesion();
-          fetchBalance();
-        }
+      // Si abren, cierran o mueven dinero (ventas, recargas, préstamos,
+      // devoluciones), recalculamos el saldo de la sesión activa.
+      if (
+        data.action === "saldo_actualizado" ||
+        data.action === "CAJA_ABIERTA" ||
+        data.action === "CAJA_CERRADA"
+      ) {
+        await checkSesion();
+        await fetchBalance();
       }
     };
 
@@ -79,7 +77,7 @@ const AppHeader: React.FC = () => {
     return () => {
       socket.off("dataChanged", handleDataChanged);
     };
-  }, [socket, checkSesion]);
+  }, [socket, checkSesion, fetchBalance]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
