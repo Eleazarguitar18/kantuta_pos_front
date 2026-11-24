@@ -1,8 +1,11 @@
 import { useNavigate } from "react-router";
+import Swal from "sweetalert2";
 import { PlusIcon, DocsIcon } from "../../../../icons";
 import DataTable from "react-data-table-component";
 import { UsuariosService } from "../services/usuariosService";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "../../../../context/auth/AuthContext";
+import { useSocket } from "../../../../context/SocketContext";
 import ComponentCard from "../../../../components/common/ComponentCard";
 import ButtonSmallAction from "../../../../components/ui/button/ButtonSmallAction";
 import Button from "../../../../components/ui/button/Button";
@@ -11,27 +14,93 @@ import { Usuario } from "../interfaces/Usuario";
 const UsuariosMain = () => {
   const [data, setData] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
+  const [procesandoId, setProcesandoId] = useState<number | null>(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const socket = useSocket();
 
-  const fetchUsuarios = async () => {
+  const fetchUsuarios = useCallback(async () => {
     try {
       setLoading(true);
       const response = await UsuariosService.getUsuarios();
       // Asumimos que response.data.data es el arreglo según la interfaz
       setData(response.data.data || response.data);
-      setLoading(false);
     } catch (error) {
       console.error("Error al cargar usuarios:", error);
+    } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchUsuarios();
-  }, []);
+  }, [fetchUsuarios]);
+
+  useEffect(() => {
+    const handleDataChanged = (data: { entity: string; action: string }) => {
+      if (data.entity === "usuario" && data.action === "estado_actualizado") {
+        fetchUsuarios();
+      }
+    };
+    socket.on("dataChanged", handleDataChanged);
+    return () => {
+      socket.off("dataChanged", handleDataChanged);
+    };
+  }, [socket, fetchUsuarios]);
 
   const editProfile = (row: Usuario) => {
     navigate(`editar/${row.id}`, { state: row });
+  };
+
+  const toggleEstado = async (row: Usuario) => {
+    if (row.id === user?.id) {
+      Swal.fire({
+        icon: "warning",
+        title: "No permitido",
+        text: "No puede desactivar su propio usuario.",
+      });
+      return;
+    }
+
+    const nuevoEstado = !row.estado;
+    const confirmacion = await Swal.fire({
+      title: nuevoEstado ? "¿Reactivar usuario?" : "¿Desactivar usuario?",
+      text: nuevoEstado
+        ? `${row.name} volverá a tener acceso al sistema.`
+        : `${row.name} no podrá iniciar sesión ni realizar acciones hasta que sea reactivado.`,
+      icon: nuevoEstado ? "question" : "warning",
+      showCancelButton: true,
+      confirmButtonColor: nuevoEstado ? "#16a34a" : "#dc2626",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: nuevoEstado ? "Sí, reactivar" : "Sí, desactivar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (!confirmacion.isConfirmed) return;
+
+    setProcesandoId(row.id);
+    try {
+      await UsuariosService.cambiarEstadoUsuario(row.id, nuevoEstado);
+      await Swal.fire({
+        icon: "success",
+        title: nuevoEstado ? "Usuario reactivado" : "Usuario desactivado",
+        text: nuevoEstado
+          ? `${row.name} ya puede volver a ingresar.`
+          : `${row.name} ya no puede ingresar al sistema.`,
+        timer: 2000,
+        showConfirmButton: false,
+      });
+      await fetchUsuarios();
+    } catch (error: any) {
+      const mensaje = error.response?.data?.message || "No se pudo cambiar el estado del usuario.";
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: typeof mensaje === "string" ? mensaje : JSON.stringify(mensaje),
+      });
+    } finally {
+      setProcesandoId(null);
+    }
   };
 
   const columns = [
@@ -83,10 +152,27 @@ const UsuariosMain = () => {
           >
             Ver/Editar Perfil
           </ButtonSmallAction>
+          <ButtonSmallAction
+            className={
+              row.estado
+                ? "bg-red-500 hover:bg-red-600 text-white"
+                : "bg-green-600 hover:bg-green-700 text-white"
+            }
+            variant="primary"
+            size="sm"
+            disabled={procesandoId === row.id || row.id === user?.id}
+            onClick={() => toggleEstado(row)}
+          >
+            {procesandoId === row.id
+              ? "..."
+              : row.estado
+                ? "Desactivar"
+                : "Activar"}
+          </ButtonSmallAction>
         </div>
       ),
       ignoreRowClick: true,
-      width: "200px",
+      width: "320px",
     },
   ];
 

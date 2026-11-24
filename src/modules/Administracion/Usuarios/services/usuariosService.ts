@@ -47,6 +47,13 @@ export const UsuariosService = {
       headers: getHeaders(),
     });
   },
+  async cambiarEstadoUsuario(id: number, estado: boolean) {
+    return await axios.patch(
+      `${API_BASE_URL}/usuario/${id}`,
+      { estado },
+      { headers: getHeaders() },
+    );
+  },
   async updatePersona(data: UpdatePersonaRequest) {
     data.id_user_update = getUserId();
     return await axios.put(`${API_BASE_URL}/persona`, data, {
