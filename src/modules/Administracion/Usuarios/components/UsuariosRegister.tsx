@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import Swal from "sweetalert2";
+import toast from "react-hot-toast";
 import Button from "../../../../components/ui/button/Button";
 import PageBreadcrumb from "../../../../components/common/PageBreadCrumb";
 import Label from "../../../../components/form/Label";
@@ -8,6 +10,27 @@ import Select from "../../../../components/form/Select";
 import { UsuariosService } from "../services/usuariosService";
 import Alert from "../../../../components/ui/alert/Alert";
 import { RegisterUsuarioRequest } from "../interfaces/UsuarioDTO";
+
+// Se usa tanto al fallar la petición como al detectar que el navegador se
+// quedó sin red mientras la creación estaba en curso. La bandera evita mostrar
+// dos avisos si el evento offline y el catch de axios ocurren juntos.
+let avisoConexionMostrado = false;
+
+const mostrarErrorConexion = () => {
+  if (avisoConexionMostrado) return;
+  avisoConexionMostrado = true;
+  Swal.fire({
+    icon: "error",
+    title: "Se perdió la conexión a internet",
+    text: "No se pudo crear el usuario. Revise su conexión y vuelva a intentarlo.",
+  });
+};
+
+const esErrorDeRed = (error: any) =>
+  !error?.response ||
+  error?.code === "ERR_NETWORK" ||
+  error?.message === "Network Error" ||
+  navigator.onLine === false;
 
 const UsuariosRegister = () => {
   const [formData, setFormData] = useState<RegisterUsuarioRequest>({
@@ -27,14 +50,35 @@ const UsuariosRegister = () => {
 
   const [showAlert, setShowAlert] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [creando, setCreando] = useState(false);
 
   const navigate = useNavigate();
 
   useEffect(() => {
     UsuariosService.getRoles()
       .then((res) => setRoles(res.data || []))
-      .catch((err) => console.error("Error fetching roles:", err));
+      .catch((err) => {
+        console.error("Error fetching roles:", err);
+        toast.error("No se pudieron cargar los roles. Revise su conexión.");
+      });
   }, []);
+
+  // Si se cae la red mientras el SweetAlert de carga está abierto, lo cerramos
+  // para que el usuario no quede atrapado esperando una respuesta que no llega.
+  useEffect(() => {
+    const handleOffline = () => {
+      if (creando) {
+        Swal.close();
+        setCreando(false);
+        mostrarErrorConexion();
+      } else {
+        toast.error("Se perdió la conexión a internet. Revise su conexión.");
+      }
+    };
+
+    window.addEventListener("offline", handleOffline);
+    return () => window.removeEventListener("offline", handleOffline);
+  }, [creando]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { id, value } = e.target;
@@ -42,23 +86,68 @@ const UsuariosRegister = () => {
   };
 
   const onSubmit = async () => {
+    if (creando) return;
+
     if (!formData.email || !formData.password || !formData.nombres || !formData.p_apellido) {
-      alert("Por favor complete los campos obligatorios (Email, Password, Nombres, Apellido).");
+      Swal.fire({
+        icon: "warning",
+        title: "Campos obligatorios",
+        text: "Por favor complete email, contraseña, nombres y apellido.",
+      });
       return;
     }
 
+    avisoConexionMostrado = false;
+    setCreando(true);
+    Swal.fire({
+      title: "Creando usuario...",
+      text: "Por favor espere. No cierre esta ventana ni presione otros botones.",
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      allowEnterKey: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
     try {
       const response = await UsuariosService.registerUsuario(formData);
+      Swal.close();
       if (response.status === 201 || response.status === 200) {
         setShowAlert(true);
-        setTimeout(() => {
-          navigate("/administracion/usuarios");
-        }, 2000);
+        await Swal.fire({
+          icon: "success",
+          title: "¡Usuario creado!",
+          text: "El usuario y su perfil personal se crearon correctamente.",
+          timer: 1800,
+          showConfirmButton: false,
+        });
+        navigate("/administracion/usuarios");
       }
     } catch (error: any) {
+      Swal.close();
       setShowError(true);
       setTimeout(() => setShowError(false), 5000);
       console.error("Error al registrar el usuario:", error);
+
+      if (esErrorDeRed(error)) {
+        mostrarErrorConexion();
+      } else {
+        const mensaje = error.response?.data?.message;
+        const detalle = Array.isArray(mensaje)
+          ? mensaje.join(", ")
+          : typeof mensaje === "string"
+            ? mensaje
+            : "Ocurrió un error en el servidor. Intente nuevamente.";
+        Swal.fire({
+          icon: "error",
+          title: "No se pudo crear el usuario",
+          text: detalle,
+        });
+      }
+    } finally {
+      setCreando(false);
     }
   };
 
@@ -73,6 +162,7 @@ const UsuariosRegister = () => {
           </h3>
           <Button
             className="bg-red-500 hover:bg-red-600 text-white"
+            disabled={creando}
             onClick={() => navigate("/administracion/usuarios")}
           >
             Atras
@@ -90,7 +180,7 @@ const UsuariosRegister = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <fieldset disabled={creando} className="m-0 min-w-0 border-0 p-0 grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Datos de la Cuenta */}
           <div className="space-y-4">
             <h4 className="text-sm font-semibold uppercase text-gray-500 mb-2">Datos de la Cuenta</h4>
@@ -155,15 +245,16 @@ const UsuariosRegister = () => {
               </div>
             </div>
           </div>
-        </div>
+        </fieldset>
 
         <div className="mt-8 flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
           <Button
             variant="primary"
             className="px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow"
+            disabled={creando}
             onClick={onSubmit}
           >
-            Crear Usuario
+            {creando ? "Creando..." : "Crear Usuario"}
           </Button>
         </div>
       </div>
