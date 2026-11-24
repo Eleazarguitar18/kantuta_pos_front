@@ -7,6 +7,7 @@ import { NumberField } from "../../../components/form/input/NumberInput";
 import TextArea from "../../../components/form/input/TextArea";
 import Button from "../../../components/ui/button/Button";
 import { Modal } from "../../../components/ui/modal";
+import { useCaja } from "../../../context/CajaContext";
 import {
   AutorizadorPrestamoExterno,
   getNombreAutorizador,
@@ -31,6 +32,7 @@ const ModalNuevoPrestamoExterno: React.FC<ModalNuevoPrestamoExternoProps> = ({
   const [autorizadores, setAutorizadores] = useState<AutorizadorPrestamoExterno[]>([]);
   const [cargandoAutorizadores, setCargandoAutorizadores] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const { sesionActiva, loading: cargandoCaja } = useCaja();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -67,6 +69,15 @@ const ModalNuevoPrestamoExterno: React.FC<ModalNuevoPrestamoExternoProps> = ({
 
     const montoNumerico = Number(monto);
 
+    if (!sesionActiva?.id) {
+      Swal.fire({
+        icon: "warning",
+        title: "Caja cerrada",
+        text: "Debe abrir una caja con sesión activa para registrar un préstamo externo.",
+      });
+      return;
+    }
+
     if (!solicitanteExterno.trim()) {
       Swal.fire("Datos incompletos", "Ingrese el nombre del solicitante externo.", "warning");
       return;
@@ -98,8 +109,8 @@ const ModalNuevoPrestamoExterno: React.FC<ModalNuevoPrestamoExternoProps> = ({
 
       await Swal.fire({
         icon: "success",
-        title: "Préstamo externo registrado",
-        text: `Se registró el préstamo de Bs. ${montoNumerico.toFixed(2)} correctamente.`,
+        title: "¡Préstamo externo exitoso!",
+        text: `Se registró el préstamo de Bs. ${montoNumerico.toFixed(2)} correctamente. El saldo de la caja ya fue actualizado.`,
         timer: 2200,
         showConfirmButton: false,
       });
@@ -128,6 +139,11 @@ const ModalNuevoPrestamoExterno: React.FC<ModalNuevoPrestamoExternoProps> = ({
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Registre salidas de dinero entregadas a personas externas y su respectivo autorizador.
         </p>
+        {!cargandoCaja && !sesionActiva && (
+          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+            No hay una caja abierta. Abra una caja antes de registrar el préstamo.
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
@@ -180,7 +196,10 @@ const ModalNuevoPrestamoExterno: React.FC<ModalNuevoPrestamoExternoProps> = ({
           <Button type="button" variant="outline" onClick={cerrarModal} disabled={enviando}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={enviando || cargandoAutorizadores}>
+          <Button
+            type="submit"
+            disabled={enviando || cargandoAutorizadores || cargandoCaja || !sesionActiva}
+          >
             {enviando ? "Registrando..." : "Registrar Préstamo"}
           </Button>
         </div>
