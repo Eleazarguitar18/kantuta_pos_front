@@ -54,7 +54,7 @@ El Frontend de Kantuta POS está dividido en los siguientes módulos principales
 - **Stack Principal:** React + TypeScript.
 - **Gestión de Estado:** Context API.
 - **Peticiones HTTP:** Axios.
-- **Conectividad API:** Este Frontend se conecta a una API REST preexistente. La configuración de conectividad se gestiona dinámicamente mediante variables de entorno (`VITE_API_URL`), permitiendo transiciones seguras entre entornos de desarrollo y producción.
+- **Conectividad API:** Este Frontend se conecta a una API REST preexistente. La configuración de conectividad se gestiona dinámicamente mediante variables de entorno (`VITE_API_BASE_URL`), permitiendo transiciones seguras entre entornos de desarrollo y producción. La API se sirve en la raíz, sin sufijo `/api`.
 
 ---
 
@@ -88,9 +88,10 @@ Para ejecutar el proyecto en un entorno local (Debian 12), sigue estos pasos:
    ```
 
 3. **Configurar las variables de entorno:**
-   Crea un archivo `.env` en la raíz del proyecto y añade la URL de la API:
+   Crea un archivo `.env` en la raíz del proyecto y añade la URL de la API (sin `/api`):
    ```env
-   VITE_API_URL=http://localhost:3000/api
+   VITE_API_BASE_URL=http://localhost:3000
+   SOCKET_IO=http://localhost:3000
    ```
 
 4. **Ejecutar el servidor de desarrollo:**
@@ -98,6 +99,12 @@ Para ejecutar el proyecto en un entorno local (Debian 12), sigue estos pasos:
    npm run dev
    ```
    El proyecto estará disponible en `http://localhost:5173` (o el puerto que indique Vite).
+
+5. **Ejecutar contra el backend de pruebas local:**
+   ```bash
+   npm run dev:test
+   ```
+   Usa `.env.test.local` (ignorado por git) apuntando a `http://localhost:3000`. Arranca primero el backend con `npm run start:test` en el proyecto `kantuta_pos_back`.
 
 ---
 
